@@ -33,14 +33,11 @@ class TestBinaryDependencies(BaseTestCase):
                       "-outfmt 5".format(blastp_binary_path,
                                          test_db))
 
-        blastp_output = utils.execute_cmd(blastp_cmd, input_str=test_seed)
+        blastp_output = self.execute_cmd(blastp_cmd, input_str=test_seed)
 
         expected_output = self.parse_file(os.path.join(self.test_resources,
                                                        "expected_blastp_output.xml"))
 
-        print(blastp_output[-10:])
-        print('\n\n')
-        print(expected_output[-10:])
         self.assertEqual(blastp_output, expected_output)
 
 
@@ -48,7 +45,27 @@ class TestBinaryDependencies(BaseTestCase):
         """
         Run kalign binary and ensure output alignment matches expected output
         """
-        self.fail()
+
+        test_input = (">A\n"
+                      "MMMMMSVLNKIKTVLTTPIRDIEGRLKKGYYFLSLEISLTYLCNSRCTFCNIWKIY\n"
+                      ">B\n"
+                      "MSVLNKIKTVLTTPIRDIEGRLKKGYYFLSLEISLTYYYYSRCTFCNIWKIY\n"
+                      ">C\n"
+                      "MSVLNKIKTVLTTPIRDIEIIEGRLKKKKYFLSLEISLTYLCNSRCTFCNIWKIY")
+
+        expected_output = [">A",
+                           "MMMMMSVLNKIKTVLTTPIRDIE---GRLKKGYYFLSLEISLTYLCNSRCTFCNIWKIY",
+                           ">B",
+                           "----MSVLNKIKTVLTTPIRDIE---GRLKKGYYFLSLEISLTYYYYSRCTFCNIWKIY",
+                           ">C",
+                           "----MSVLNKIKTVLTTPIRDIEIIEGRLKKKKYFLSLEISLTYLCNSRCTFCNIWKIY"]
+
+
+        kalign_binary_path = os.path.join(self.binary_path, 'kalign')
+        kalign_output = self.execute_cmd("{0}".format(kalign_binary_path),
+                                         test_input)
+
+        self.assertEqual(kalign_output, expected_output)
 
 
     def test_trimal(self):
