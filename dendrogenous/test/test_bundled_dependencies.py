@@ -92,7 +92,21 @@ class TestBinaryDependencies(BaseTestCase):
         """
         Run fasttree2 and ensure output phylogeny matches expected output
         """
-        self.fail()
+        fasttree_binary_path = os.path.join(self.binary_path, 'FastTree')
+        test_mask_input = (">A 52 bp\n"
+                           "MSVLNKIKTVLTTPIRDIEGRLKKGYYFLSLEISLTYLCNSRCTFCNIWKIY\n"
+                           ">B 52 bp\n"
+                           "MSVLNKIKTVLTTPIRDIEGRLKKGYYFLSLEISLTYYYYSRCTFCNIWKIY\n"
+                           ">C 52 bp\n"
+                           "MSVLNKIKTVLTTPIRDIEGRLKKKKYFLSLEISLTYLCNSRCTFCNIWKIY")
+
+        fasttree_output = self.execute_cmd("{0}".format(fasttree_binary_path),
+                                           input_str=test_mask_input)
+
+        expected_output = ["(A:0.00055,B:0.06596,C:0.04382);"]
+
+        self.assertEqual(fasttree_output, expected_output)
+
 
 if __name__ == '__main__':
 
