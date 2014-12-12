@@ -72,7 +72,20 @@ class TestBinaryDependencies(BaseTestCase):
         """
         Run trimal and ensure output mask matches expected output
         """
-        self.fail()
+        trimal_binary_path = os.path.join(self.binary_path, 'trimal')
+        test_input = os.path.join(self.test_resources, 'test_alignment.afa')
+        trimal_cmd = "trimal -in {0} -nogaps".format(test_input)
+
+        expected_output = [">A 52 bp",
+                           "MSVLNKIKTVLTTPIRDIEGRLKKGYYFLSLEISLTYLCNSRCTFCNIWKIY",
+                           ">B 52 bp",
+                           "MSVLNKIKTVLTTPIRDIEGRLKKGYYFLSLEISLTYYYYSRCTFCNIWKIY",
+                           ">C 52 bp",
+                           "MSVLNKIKTVLTTPIRDIEGRLKKKKYFLSLEISLTYLCNSRCTFCNIWKIY"]
+
+        trimal_output = self.execute_cmd(trimal_cmd)
+
+        self.assertEqual(trimal_output, expected_output)
 
 
     def test_fasttree2(self):

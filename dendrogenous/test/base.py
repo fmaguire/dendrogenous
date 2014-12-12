@@ -30,7 +30,9 @@ class BaseTestCase(unittest.TestCase):
         Otherwise just executes cmd normally
         """
         if input_str is None:
-            subprocess.call(cmd.split())
+            proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+            (stdout, stderr) = proc.communicate()
+
 
         else:
             osnull = open(os.devnull, 'w')
@@ -42,8 +44,9 @@ class BaseTestCase(unittest.TestCase):
             (stdout, stderr) = proc.communicate(input_str.encode())
 
             osnull.close()
-            # stdout is returned as a binary string with newline characters
-            stdout_list = [x for x in stdout.decode().split(os.linesep) \
-                                if len(x) > 0]
-            return stdout_list
+
+       # stdout is returned as a binary string with newline characters
+        stdout_list = [x for x in stdout.decode().split(os.linesep) \
+                          if len(x) > 0]
+        return stdout_list
 
