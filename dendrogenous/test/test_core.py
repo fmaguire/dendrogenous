@@ -21,11 +21,11 @@ class TestCore(unittest.TestCase):
         """
         test = dg.dendrogenous(self.test_record)
 
-        expected_seed = ">YP_0252921_1\n
-                         MKQHKAMIVALIVICITAVVAALVTRKDLCEVHIRTGQTEGGEEEEVAVF"
+        expected_seed = (">YP_0252921_1\n"
+                         "MKQHKAMIVALIVICITAVVAALVTRKDLCEVHIRTGQTEGGEEEEVAVF")
 
         self.assertEqual(test.seed, expected_seed)
-        self.assert(test.state, False)
+        self.assertIs(test.state, False)
 
 
     def test__blast(self):
