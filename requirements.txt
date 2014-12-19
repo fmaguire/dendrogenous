@@ -1,0 +1,5 @@
+biopython==1.64
+py==1.4.26
+pytest==2.6.4
+tox==1.8.1
+virtualenv==1.11.6
