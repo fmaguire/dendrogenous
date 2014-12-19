@@ -1,6 +1,8 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 import dendrogenous.core as dg
+import unittest
+from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio.Alphabet import IUPAC
 
@@ -14,12 +16,16 @@ class TestCore(unittest.TestCase):
                    IUPAC.protein),
                    id="YP_025292.1", name="HokC",
                    description="toxic membrane protein, small")
+        self.genome_list = ""
+        self.settings = ""
 
     def test_init(self):
         """
         Ensure class init works correctly
         """
-        test = dg.dendrogenous(self.test_record)
+        test = dg.dendrogenous(self.test_record,
+                               self.genome_list,
+                               self.settings)
 
         expected_seed = (">YP_0252921_1\n"
                          "MKQHKAMIVALIVICITAVVAALVTRKDLCEVHIRTGQTEGGEEEEVAVF")

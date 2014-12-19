@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import dendrogenous.utils as utils
+
 class dendrogenous():
     """
     Tree generation class with methods for all the steps required to generate

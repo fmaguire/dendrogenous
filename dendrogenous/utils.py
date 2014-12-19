@@ -29,3 +29,21 @@ def execute_cmd(cmd, input_str=None):
 
         return stdout_list
 
+
+def reformat_accession(seq_record):
+    """
+    Reformat accessions to be <=20 chars long and not contain any special chars
+    """
+
+    if len(seq_record.id) > 20:
+        reformatted_id = seq_record.id[:19]
+    else:
+        reformatted_id = seq_record.id
+
+    reformatted_id.replace('|','_')
+    reformatted_id.replace('/','_')
+    reformatted_id.replace('\\','_')
+
+    return reformatted_id
+
+

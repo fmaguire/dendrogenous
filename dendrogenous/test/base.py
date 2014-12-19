@@ -39,7 +39,7 @@ class BaseTestCase(unittest.TestCase):
             proc = subprocess.Popen(cmd,
                                     shell=True,
                                     stdin=subprocess.PIPE,
-                                    stdout=subprocess.PIPE,
+                                   stdout=subprocess.PIPE,
                                     stderr=osnull)
             (stdout, stderr) = proc.communicate(input_str.encode())
 
