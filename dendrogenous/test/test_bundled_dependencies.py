@@ -74,13 +74,14 @@ class TestBinaryDependencies(BaseTestCase):
         """
         trimal_binary_path = os.path.join(self.binary_path, 'trimal')
         test_input = os.path.join(self.test_resources, 'test_alignment.afa')
-        trimal_cmd = "trimal -in {0} -nogaps".format(test_input)
+        trimal_cmd = "{0} -in {1} -nogaps".format(trimal_binary_path,
+                                                  test_input)
 
-        expected_output = [">A 52 bp",
+        expected_output = [">A",
                            "MSVLNKIKTVLTTPIRDIEGRLKKGYYFLSLEISLTYLCNSRCTFCNIWKIY",
-                           ">B 52 bp",
+                           ">B",
                            "MSVLNKIKTVLTTPIRDIEGRLKKGYYFLSLEISLTYYYYSRCTFCNIWKIY",
-                           ">C 52 bp",
+                           ">C",
                            "MSVLNKIKTVLTTPIRDIEGRLKKKKYFLSLEISLTYLCNSRCTFCNIWKIY"]
 
         trimal_output = self.execute_cmd(trimal_cmd)
