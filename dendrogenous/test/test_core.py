@@ -1,7 +1,13 @@
 #!/usr/bin/env python
 
-import dendrogenous.core as dg
+import dendrogenous
+import dendrogenous.core as core
 import unittest
+import os
+import shutil
+import sys
+
+print(sys.path)
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio.Alphabet import IUPAC
@@ -10,28 +16,49 @@ class TestCore(unittest.TestCase):
     """
     Unit tests for the core dendrogeous class and its methods
     """
-    def setUp(self):
-        self.test_record = SeqRecord(\
+    @classmethod
+    def setUpClass(cls):
+        """
+        Generate structures required for testing just dendrogenous core class
+        """
+        cls.test_record = SeqRecord(\
                    Seq("MKQHKAMIVALIVICITAVVAALVTRKDLCEVHIRTGQTEGGEEEEVAVF",
                    IUPAC.protein),
                    id="YP_025292.1", name="HokC",
                    description="toxic membrane protein, small")
-        self.genome_list = ""
-        self.settings = ""
 
-    def test_init(self):
-        """
-        Ensure class init works correctly
-        """
-        test = dg.dendrogenous(self.test_record,
-                               self.genome_list,
-                               self.settings)
+        cls.settings = {"genome_list" : ["Escherichia_coli_IAI39",
+                                         "Escherichia_coli_O157_H7_str._Sakai",
+                                         "Nanoarchaeum_equitans_Kin4-M"],
+                        "genome_dir" : os.path.join('dendrogenous',
+                                                    'test',
+                                                    'resources'),
+                        "output_dir" : 'core_test_dir'}
 
-        expected_seed = (">YP_0252921_1\n"
+        output_dir = cls.settings['output_dir']
+        subdirs = ['sequences', os.path.join('sequences', 'unparsed_blast_output'),
+                   'alignments',
+                   'masks',
+                   'phylogenies', os.path.join('phylogenies', 'coded_named')]
+        if not os.path.exists(output_dir):
+            os.mkdir(output_dir)
+            for subdir in subdirs:
+                os.mkdir(os.path.join(output_dir, subdir))
+
+    def test_init_clean(self):
+        """
+        Ensure class init works correctly when there is no pre-existing output
+        """
+        test = core.dendrogenous(self.test_record,
+                                 self.settings)
+
+        expected_seed = (">YP_025292_1\n"
                          "MKQHKAMIVALIVICITAVVAALVTRKDLCEVHIRTGQTEGGEEEEVAVF")
 
         self.assertEqual(test.seed, expected_seed)
         self.assertIs(test.state, False)
+
+        # TODO: Make sure tests for utils functions init calls are tested
 
 
     def test__blast(self):
@@ -74,3 +101,14 @@ class TestCore(unittest.TestCase):
         """
 
         """
+
+    @classmethod
+    def tearDownClass(cls):
+        """
+        Clean up the outputs generated during testing
+        """
+        if os.path.exists(cls.settings['output_dir']):
+            shutil.rmtree(cls.settings['output_dir'])
+
+if __name__ == '__main__':
+    unittest.main()

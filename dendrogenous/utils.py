@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import re
 import os
 import shutil
 import json
@@ -36,14 +37,61 @@ def reformat_accession(seq_record):
     """
 
     if len(seq_record.id) > 20:
-        reformatted_id = seq_record.id[:19]
+        short_id = seq_record.id[:19]
     else:
-        reformatted_id = seq_record.id
+        short_id = seq_record.id
 
-    reformatted_id.replace('|','_')
-    reformatted_id.replace('/','_')
-    reformatted_id.replace('\\','_')
-
+    reformatted_id = re.sub('[|,/,\,.]', '_', short_id)
     return reformatted_id
 
+
+def parse_settings(settings_file):
+    """
+    Parse the settings json and ensure required values are present
+    """
+    pass
+
+
+def check_genomes(genome_dir, genome_list):
+    """
+    Check all the genomes specified in the settings file are in the genome_dir
+    Change names and underscores as appropriate
+    """
+    pass
+
+
+def create_directory_structure(output_dir):
+    """
+    Generate the required output directory structure in the output_dir
+    """
+    pass
+
+
+def get_state(seq_name, output_dir):
+    """
+    Check the completed run state of a given seed name in the output dir
+    e.g. is there already a generated phylogeny and so on
+    """
+    return False
+
+def execute_cmd(cmd, stdin_str=None):
+    """
+    Execute a subprocess command using stdin if present
+    """
+
+    if stdin_str is None:
+        proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+        (stdout, stderr) = proc.communicate()
+    else:
+        osnull = open(os.devnull, 'w')
+        proc = subprocess.Popen(cmd,
+                                shell=True,
+                                stdin=subprocess.PIPE,
+                                stdout=subprocess.PIPE,
+                                stderr=osnull)
+        (stdout, stderr) = proc.communicate(input_str.encode())
+
+        osnull.close()
+
+    return stdout
 

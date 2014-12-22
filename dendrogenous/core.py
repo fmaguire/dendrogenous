@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 import dendrogenous.utils as utils
 
@@ -8,39 +8,36 @@ class dendrogenous():
     phylogenies
     """
 
-    def __init__(self, seq_record, genome_list, settings):
+    def __init__(self, seq_record, settings):
         """
         Initialise the class and truncate the accession to 20-chars
         """
 
-        seq_record.id = utils.reformat_accession(seq_record)
-        self.seed = ">{0}\n{1}".format(seq_record.id,
+        self.seq_name = utils.reformat_accession(seq_record)
+        self.seed = ">{0}\n{1}".format(self.seq_name,
                                        seq_record.seq)
 
-        self.genome_paths = utils.check_and_get_genome(genome_list, settings)
 
+        self.output_dir = settings['output_dir']
         # check precomputed state of class by looking for files matching
         # this name in output folders (globs)
-        self.state = utils.get_state(seq_name)
+        self.state = utils.get_state(self.seq_name, self.output_dir)
 
-    def _blast(self):
+    def _blast(self, genome_name):
         """
         Blast seed sequence against db using BLASTP
         """
-        blast_settings = self.settings.get('blast_settings')
+        blast_settings = self.settings.get('blast_settings', default={})
         num_seqs = blast_settings.get('num_seqs', default=1)
         e_value = blast_settings.get('e_value', default=1e-5)
-        unparsed_blast_hit_file = "{0}_v_{1}.bo".format(input_seed_seq,
-                                                        genome.replace('/',
-                                                                       '_'))
 
-        blast_cmd = "blastp -db {1} -out {2}" \
+        blast_cmd = "blastp -db {1} " \
                     " -evalue {3} -max_target_seqs {4}" \
                     " -outfmt 5".format(genome,
-                                        unparsed_blast_hit_file,
                                         evalue,
                                         seqs_to_return_per_genome)
-        blast_output = subprocess.call(blast_cmd)
+
+        blast_output = utils.execute_cmd(blast_cmd, stdin_str=self.seed)
 
 
     def _parse_blast(self, blast_output):
@@ -58,7 +55,8 @@ class dendrogenous():
                               db=db_config['db'])
         cur = con.cursor()
 
-        # Parse the xml output returns an iterator of blast record objects over the xml blastoutput file
+        # Parse the xml output returns an iterator of blast record
+        # objects over the xml blastoutput file
         blast_hits = NCBIXML.parse(io.StringIO(blast_output))
 
         hit_id_set = set()
@@ -79,15 +77,16 @@ class dendrogenous():
                 #raise Exception("Failed to find"
                 #                " protein_ID in DB: {0}".format(hit_id))
 
-            sequence_record = SeqRecord(
+            sequence_record = SeqRecord(\
                 Seq(sequence[0], IUPAC.protein), id=hit_id, description='')
             hit_records.append(sequence_record)
         con.close()
-        os.unlink(tmp_file)
 
 
     def seqs(self):
-
+        """
+        Get similar sequences to seed by blasting genomes and parsing the output
+        """
         self.parsed_blast_hits = os.path.join("1.seqs", self.seq_name)
         # file containing blast hits
 
