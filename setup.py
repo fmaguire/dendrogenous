@@ -2,7 +2,7 @@
 
 from distutils.core import setup
 
-setup(name='Dendrogenous',
+setup(name='dendrogenous',
       version='0.1',
       description="Batch create phylogenies with a genome database and list of seeds",
       author="Finlay Maguire",
