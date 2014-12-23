@@ -1,6 +1,16 @@
 #!/usr/bin/env python
 
 import dendrogenous.utils as utils
+import os
+import io
+import pymysql
+import subprocess
+from Bio import SeqIO
+from Bio.Blast import NCBIXML
+from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
+from Bio.Alphabet import IUPAC
+
 
 class dendrogenous():
     """
@@ -13,6 +23,8 @@ class dendrogenous():
         Initialise the class and truncate the accession to 20-chars
         """
 
+        self.settings = settings
+
         self.seq_name = utils.reformat_accession(seq_record)
         self.seed = ">{0}\n{1}".format(self.seq_name,
                                        seq_record.seq)
@@ -21,35 +33,86 @@ class dendrogenous():
         self.output_dir = settings['output_dir']
         # check precomputed state of class by looking for files matching
         # this name in output folders (globs)
-        self.state = utils.get_state(self.seq_name, self.output_dir)
+        self.state = self._get_state(self.seq_name, self.output_dir)
+
+    def _execute_cmd(self, cmd, input_str=None):
+        """
+        Execute a command using subprocess using a string as stdin
+        and returns the stdout as a string if an input_str is provided
+        Otherwise just executes cmd normally
+        """
+        if input_str is None:
+            proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+            (stdout, stderr) = proc.communicate()
+
+
+        else:
+            osnull = open(os.devnull, 'w')
+            proc = subprocess.Popen(cmd,
+                                    shell=True,
+                                    stdin=subprocess.PIPE,
+                                   stdout=subprocess.PIPE,
+                                    stderr=osnull)
+            (stdout, stderr) = proc.communicate(input_str.encode())
+
+            osnull.close()
+
+        return stdout.decode()
+
+    def _reformat_accession(self, seq_record):
+        """
+        Reformat accessions to be <=20 chars long and not contain any special chars
+        """
+
+        if len(seq_record.id) > 20:
+            short_id = seq_record.id[:19]
+        else:
+            short_id = seq_record.id
+
+        reformatted_id = re.sub('[|,/,\,.]', '_', short_id)
+        return reformatted_id
+
+
+    def _get_state(self, seq_name, output_dir):
+        """
+        Check the completed run state of a given seed name in the output dir
+        e.g. is there already a generated phylogeny and so on
+        """
+        return False
+
 
     def _blast(self, genome_name):
         """
         Blast seed sequence against db using BLASTP
         """
-        blast_settings = self.settings.get('blast_settings', default={})
-        num_seqs = blast_settings.get('num_seqs', default=1)
-        e_value = blast_settings.get('e_value', default=1e-5)
+        blast_settings = self.settings.get('blast_settings', {})
+        num_seqs = blast_settings.get('num_seqs', 1)
+        e_value = blast_settings.get('e_value', 1e-5)
 
-        blast_cmd = "blastp -db {1} " \
-                    " -evalue {3} -max_target_seqs {4}" \
-                    " -outfmt 5".format(genome,
-                                        evalue,
-                                        seqs_to_return_per_genome)
+        genome = os.path.join(self.settings['genome_dir'], genome_name)
+        blastp_path = os.path.join(self.settings['binary_path'], 'blastp')
+        blast_cmd = "{0} -db {1} " \
+                    " -evalue {2} -max_target_seqs {3}" \
+                    " -outfmt 5".format(blastp_path,
+                                        genome,
+                                        e_value,
+                                        num_seqs)
 
-        blast_output = utils.execute_cmd(blast_cmd, stdin_str=self.seed)
+        blast_output = self._execute_cmd(blast_cmd, input_str=self.seed)
+
+        return blast_output
 
 
     def _parse_blast(self, blast_output):
         """
         Parses a blast_output files and queries the
-        MySQLdb to recover the appropriate sequences
+        MySQL DB to recover the appropriate sequences
         """
 
         # no get with default vals as this is a mandatory part of the
         # settings.json - use them to connect to mysql server
         db_config = self.settings['db_config']
-        con = MySQLdb.connect(host=db_config['host'],
+        con = pymysql.connect(host=db_config['host'],
                               user=db_config['user'],
                               passwd=db_config['passwd'],
                               db=db_config['db'])
@@ -82,27 +145,27 @@ class dendrogenous():
             hit_records.append(sequence_record)
         con.close()
 
+        return hit_records
 
-    def seqs(self):
+
+    def get_seqs(self):
         """
         Get similar sequences to seed by blasting genomes and parsing the output
         """
-        self.parsed_blast_hits = os.path.join("1.seqs", self.seq_name)
-        # file containing blast hits
-
-        for genome in settings['genome_paths']:
-            blast_output = self._blast()
+        self.output_seqs = os.path.join(self.output_dir, "sequences",
+                                        self.seq_name) # file containing blast hits
+        num_hits = 0
+        for genome in self.settings['genome_list']:
+            blast_output = self._blast(genome)
             blast_hits = self._parse_blast(blast_output)
-            num_hits += len(hits)
-            SeqIO.write(blast_hits, self.parsed_blast_hits, 'fasta')
-            os.unlink(temporary_blast_hits)
+            num_hits += len(blast_hits)
+            SeqIO.write(blast_hits, self.output_seqs, 'fasta')
 
-        if num_seqs < minimum_seqs:
-            os.rename(parsed_output_seqs,
-                      parsed_output_seqs + '_too_few_seqs_for_alignment')
+        if num_hits < self.settings['minimum_seqs']:
+            os.rename(self.output_seqs,
+                      self.output_seqs+ '_too_few_seqs_for_alignment')
 
-        # update state correctly
-
+        assert False
 
     def align(self):
         """

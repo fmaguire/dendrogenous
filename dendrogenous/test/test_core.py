@@ -7,12 +7,13 @@ import os
 import shutil
 import sys
 
-print(sys.path)
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio.Alphabet import IUPAC
 
-class TestCore(unittest.TestCase):
+from dendrogenous.test.base import BaseTestCase
+
+class TestCore(BaseTestCase):
     """
     Unit tests for the core dendrogeous class and its methods
     """
@@ -27,16 +28,23 @@ class TestCore(unittest.TestCase):
                    id="YP_025292.1", name="HokC",
                    description="toxic membrane protein, small")
 
-        cls.settings = {"genome_list" : ["Escherichia_coli_IAI39",
-                                         "Escherichia_coli_O157_H7_str._Sakai",
-                                         "Nanoarchaeum_equitans_Kin4-M"],
+        cls.settings = {"genome_list" : ["Escherichia_coli_IAI39.fas",
+                                         "Escherichia_coli_O157_H7_str._Sakai.fas",
+                                         "Nanoarchaeum_equitans_Kin4-M.fas"],
                         "genome_dir" : os.path.join('dendrogenous',
                                                     'test',
                                                     'resources'),
-                        "output_dir" : 'core_test_dir'}
+                        "output_dir" : 'core_test_dir',
+                        "binary_path": os.path.join('dendrogenous',
+                                                    'dependencies'),
+                        "db_config" : {"host": "REDACTED",
+                                       "db": "new_proteins",
+                                       "user": "orchard",
+                                       "passwd": "REDACTED"},
+                        "minimum_seqs": 3}
 
         output_dir = cls.settings['output_dir']
-        subdirs = ['sequences', os.path.join('sequences', 'unparsed_blast_output'),
+        subdirs = ['sequences',
                    'alignments',
                    'masks',
                    'phylogenies', os.path.join('phylogenies', 'coded_named')]
@@ -45,41 +53,51 @@ class TestCore(unittest.TestCase):
             for subdir in subdirs:
                 os.mkdir(os.path.join(output_dir, subdir))
 
+    def setUp(self):
+         self.test = core.dendrogenous(self.test_record,
+                                       self.settings)
+
+
     def test_init_clean(self):
         """
         Ensure class init works correctly when there is no pre-existing output
         """
-        test = core.dendrogenous(self.test_record,
-                                 self.settings)
-
         expected_seed = (">YP_025292_1\n"
                          "MKQHKAMIVALIVICITAVVAALVTRKDLCEVHIRTGQTEGGEEEEVAVF")
 
-        self.assertEqual(test.seed, expected_seed)
-        self.assertIs(test.state, False)
+        self.assertEqual(self.test.seed, expected_seed)
+        self.assertIs(self.test.state, False)
 
         # TODO: Make sure tests for utils functions init calls are tested
 
-
     def test__blast(self):
         """
-        Blast
+        Test blast function returns output
         """
-        self.fail()
-        # only output correct number of temp outputs to output folder
-        # make sure these outputs are correct and fixed
-        # mock db?
+        blast_output = self.test._blast("Escherichia_coli_O157_H7_str._Sakai.fas")
+
+        expected_output = self.parse_file(os.path.join(self.test_resources,
+                                                       "expected_core_blastp_output.xml"))
+
+        self.assertEqual(blast_output.split(os.linesep), expected_output)
 
 
+    @unittest.skip('tests local server')
     def test__parse(self):
         """
-        Ensure correct parsing of hits
+        Ensure correct parsing of hits locally when connected to server
         """
-        self.fail()
-        # reads correct number of outputs
-        # correctly deletes them
-        # has correct sequences in parsed output in right folder
 
+        blastp_xml = self.parse_file(os.path.join(self.test_resources,
+                                                  "expected_core_blastp_output.xml"))
+
+        blastp_output = "\n".join(blastp_xml)
+
+        parsed_blast = self.test._parse_blast(blastp_output)
+
+        expected_parsed_hit_id = '15829270'
+
+        self.assertEqual(parsed_blast[0].id, expected_parsed_hit_id)
 
     def test_get_seqs(self):
         """
@@ -87,7 +105,10 @@ class TestCore(unittest.TestCase):
         to the appropriate directory
         Ensure state is correctly updated
         """
+        self.test.get_seqs()
+        #for some reason I can't even inspect these
         self.fail()
+
 
     def test_get_seqs_insufficient(self):
         """
@@ -101,6 +122,9 @@ class TestCore(unittest.TestCase):
         """
 
         """
+        self.fail()
+
+
 
     @classmethod
     def tearDownClass(cls):
