@@ -42,20 +42,21 @@ class Dendrogenous():
             raise ValueError("Supplied sequence is not SeqRecord class")
 
         self.settings = settings
-        self.seq_name = self.__reformat_accession(seq_record)
+        self.seq_name = self._reformat_accession(seq_record)
 
         self.seed = ">{0}\n{1}".format(self.seq_name,
                                        seq_record.seq)
 
         self.output_dir = self.settings.output_dir
 
-    def __reformat_accession(self, seq_record):
+    @staticmethod
+    def _reformat_accession(seq_record):
         """
         Reformat accessions to be <=20 chars long and not contain any special chars
         """
 
         if len(seq_record.id) > 20:
-            short_id = seq_record.id[:19]
+            short_id = seq_record.id[:20]
         else:
             short_id = seq_record.id
 

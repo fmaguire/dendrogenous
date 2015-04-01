@@ -65,7 +65,12 @@ class TestCore(BaseTestCase):
                    description="toxic membrane protein, small")
 
 
-
+    def init_core():
+        mock_settings = mock.Mock(dg.settings.Settings)
+        mock_settings.output_dir = "testdir"
+        test_class = dg.core.Dendrogenous(test_record,
+                                          mock_settings)
+        return test_class
 
     def test_init_clean(self):
         """
@@ -108,6 +113,38 @@ class TestCore(BaseTestCase):
         with self.assertRaises(ValueError):
             dg.core.Dendrogenous(self.test_record,
                                  invalid_settings)
+
+    def test_reformat_accession_method_for_too_long_accessions(self):
+        """
+        Test reformat accession works as expected
+        """
+        too_long = SeqRecord(\
+                   Seq("X",
+                   IUPAC.protein),
+                   id="012345678901234567890123456789",
+                   name="foo",
+                   description="bar, baz")
+
+        truncated = dg.core.Dendrogenous._reformat_accession(too_long)
+
+        self.assertEqual(len(truncated), 20)
+        self.assertEqual(truncated, "01234567890123456789")
+
+    def test_reformat_accession_method_for_problematic_characters(self):
+        """
+        Test reformat accession works as expected
+        """
+        bad_char = SeqRecord(\
+                   Seq("X",
+                   IUPAC.protein),
+                   id="|blah|t",
+                   name="foo",
+                   description="bar, baz")
+
+        fixed_chars = dg.core.Dendrogenous._reformat_accession(bad_char)
+        self.assertEqual(fixed_chars, "_blah_t")
+
+
 
 
     #def test__blast(self):
