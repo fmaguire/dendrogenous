@@ -134,11 +134,8 @@ class Dendrogenous():
                         "WHERE protein_ID='{0}'".format(hit_id))
             sequence = cur.fetchone()
             if sequence is None:
-                with open('protein_IDs_that_dont_exist', 'a+') as fh:
-                   fh.write(str(hit_id) + '\n')
+                self.settings.logger.error("blast hit protein_ID not in db: {}".format(str(hit_id)))
                 continue
-                #raise Exception("Failed to find"
-                #                " protein_ID in DB: {0}".format(hit_id))
 
             sequence_record = SeqRecord(\
                 Seq(sequence[0], IUPAC.protein), id=hit_id, description='')

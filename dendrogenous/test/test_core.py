@@ -3,6 +3,8 @@
 import dendrogenous as dg
 import dendrogenous.core
 
+
+import logging
 import unittest
 import unittest.mock as mock
 import os
@@ -191,8 +193,37 @@ class TestCore(BaseTestCase):
         parsed_blast = test_class._parse_blast(blastp_output)
 
         expected_parsed_hit_id = '15829270'
+        expected_parsed_seq = Seq('MLNTC', IUPAC.IUPACProtein())
 
         self.assertEqual(parsed_blast[0].id, expected_parsed_hit_id)
+        self.assertEqual(parsed_blast[0].seq[:5], expected_parsed_seq)
+
+    @pytest.mark.skipif("gethostname() != 'zorya'")
+    def test__parse_blast_broken(self):
+        """
+        Ensure correct parsing of hits locally when connected to server
+        """
+        mock_settings = mock.Mock(dg.settings.Settings)
+        mock_settings.output_dir = "testdir"
+        mock_settings.logger = logging.getLogger("test")
+
+        with open(os.path.join(self.test_resources, 'secret.pickle'), 'rb') as secret:
+            mock_settings.db_config = pickle.load(secret)
+
+        test_class = dg.core.Dendrogenous(self.test_record,
+                                          mock_settings)
+
+        blastp_xml = self.parse_file(os.path.join(self.test_resources,
+                                                  "broken_blastp_output.xml"))
+        blastp_output = "\n".join(blastp_xml)
+
+        parsed_blast = test_class._parse_blast(blastp_output)
+        expected_output = []
+
+        self.assertEqual(parsed_blast, expected_output)
+        # test logging?
+        #self.assertIs(test_class.logger.error, "foobar")
+
 
     #def test_get_seqs(self):
     #    """
