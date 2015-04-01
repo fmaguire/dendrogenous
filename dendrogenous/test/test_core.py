@@ -8,6 +8,10 @@ import unittest.mock as mock
 import os
 import shutil
 import sys
+import pytest
+import pickle
+
+from socket import gethostname
 
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
@@ -145,7 +149,10 @@ class TestCore(BaseTestCase):
         self.assertEqual(fixed_chars, "_blah_t")
 
 
-    def test__blast(self):
+    def test__blast_runs(self):
+        """
+        Make sure the __blast method correctly runs and returns decoded xml output
+        """
         mock_settings = mock.Mock(dg.settings.Settings)
         mock_settings.output_dir = "testdir"
         mock_settings.binary_paths = {'blastp': os.path.join(self.binary_path, "blastp")}
@@ -163,18 +170,25 @@ class TestCore(BaseTestCase):
         blast_output = test_class._blast(genome)
         self.assertEqual(blast_output.split(os.linesep), expected_output)
 
-    @unittest.skip('tests local server')
-    def test__parse(self):
+    @pytest.mark.skipif("gethostname() != 'zorya'")
+    def test__parse_blast(self):
         """
         Ensure correct parsing of hits locally when connected to server
         """
+        mock_settings = mock.Mock(dg.settings.Settings)
+        mock_settings.output_dir = "testdir"
+        with open(os.path.join(self.test_resources, 'secret.pickle'), 'rb') as secret:
+            mock_settings.db_config = pickle.load(secret)
+
+        test_class = dg.core.Dendrogenous(self.test_record,
+                                          mock_settings)
 
         blastp_xml = self.parse_file(os.path.join(self.test_resources,
                                                   "expected_core_blastp_output.xml"))
 
         blastp_output = "\n".join(blastp_xml)
 
-        parsed_blast = self.test._parse_blast(blastp_output)
+        parsed_blast = test_class._parse_blast(blastp_output)
 
         expected_parsed_hit_id = '15829270'
 

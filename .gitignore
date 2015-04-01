@@ -46,3 +46,6 @@ docs/_build
 
 # vim
 *.swp
+
+# secrets
+secret.pickle

@@ -13,6 +13,12 @@ a MYSQL genome database
 
 -  Free software: BSD license
 
+
+- Sequences need to be in a MySQL database containing a table "cider" 
+   which has sequences and protein_ID fields corresponding to blastdb
+
+
+
 Features
 --------
 

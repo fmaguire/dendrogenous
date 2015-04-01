@@ -107,45 +107,45 @@ class Dendrogenous():
         return blast_output
 
 
-    #def __parse_blast(self, blast_output):
-    #    """
-    #    Parses a blast_output files and queries the
-    #    MySQL DB to recover the appropriate sequences
-    #    """
+    def _parse_blast(self, blast_output):
+        """
+        Parses a blast_output files and queries the
+        MySQL DB to recover the appropriate sequences
+        """
 
-    #    # no get with default vals as this is a mandatory part of the
-    #    # settings.json - use them to connect to mysql server
-    #    con = pymysql.connect(**self.settings.db_config)
-    #    cur = con.cursor()
+        # no get with default vals as this is a mandatory part of the
+        # settings.json - use them to connect to mysql server
+        con = pymysql.connect(**self.settings.db_config)
+        cur = con.cursor()
 
-    #    # Parse the xml output returns an iterator of blast record
-    #    # objects over the xml blastoutput file
-    #    blast_hits = NCBIXML.parse(io.StringIO(blast_output))
+        # Parse the xml output returns an iterator of blast record
+        # objects over the xml blastoutput file
+        blast_hits = NCBIXML.parse(io.StringIO(blast_output))
 
-    #    hit_id_set = set()
-    #    for blast_record in blast_hits:
-    #        for alignment in blast_record.alignments:
-    #            for hsp in alignment.hsps:
-    #                hit_id_set.add(alignment.hit_def)
+        hit_id_set = set()
+        for blast_record in blast_hits:
+            for alignment in blast_record.alignments:
+                for hsp in alignment.hsps:
+                    hit_id_set.add(alignment.hit_def)
 
-    #    hit_records = []
-    #    for hit_id in hit_id_set:
-    #        cur.execute("SELECT sequence FROM cider "
-    #                    "WHERE protein_ID='{0}'".format(hit_id))
-    #        sequence = cur.fetchone()
-    #        if sequence is None:
-    #            with open('protein_IDs_that_dont_exist', 'a+') as fh:
-    #               fh.write(str(hit_id) + '\n')
-    #            continue
-    #            #raise Exception("Failed to find"
-    #            #                " protein_ID in DB: {0}".format(hit_id))
+        hit_records = []
+        for hit_id in hit_id_set:
+            cur.execute("SELECT sequence FROM cider "
+                        "WHERE protein_ID='{0}'".format(hit_id))
+            sequence = cur.fetchone()
+            if sequence is None:
+                with open('protein_IDs_that_dont_exist', 'a+') as fh:
+                   fh.write(str(hit_id) + '\n')
+                continue
+                #raise Exception("Failed to find"
+                #                " protein_ID in DB: {0}".format(hit_id))
 
-    #        sequence_record = SeqRecord(\
-    #            Seq(sequence[0], IUPAC.protein), id=hit_id, description='')
-    #        hit_records.append(sequence_record)
-    #    con.close()
+            sequence_record = SeqRecord(\
+                Seq(sequence[0], IUPAC.protein), id=hit_id, description='')
+            hit_records.append(sequence_record)
+        con.close()
 
-    #    return hit_records
+        return hit_records
 
 
     #def get_seqs(self):
