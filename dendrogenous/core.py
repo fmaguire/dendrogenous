@@ -65,47 +65,46 @@ class Dendrogenous():
 
 
 
-    #def __execute_cmd(self, cmd, input_str=None):
-    #    """
-    #    Execute a command using subprocess using a string as stdin
-    #    and returns the stdout as a string if an input_str is provided
-    #    Otherwise just executes cmd normally
-    #    """
-    #    if input_str:
-    #        osnull = open(os.devnull, 'w')
-    #        proc = subprocess.Popen(cmd,
-    #                                shell=True,
-    #                                stdin=subprocess.PIPE,
-    #                                stdout=subprocess.PIPE,
-    #                                stderr=osnull)
-    #        (stdout, stderr) = proc.communicate(input_str.encode())
-    #        osnull.close()
+    def __execute_cmd(self, cmd, input_str=None):
+        """
+        Execute a command using subprocess using a string as stdin
+        and returns the stdout as a string if an input_str is provided
+        Otherwise just executes cmd normally
+        """
+        if input_str:
+            osnull = open(os.devnull, 'w')
+            proc = subprocess.Popen(cmd,
+                                    shell=True,
+                                    stdin=subprocess.PIPE,
+                                    stdout=subprocess.PIPE,
+                                    stderr=osnull)
+            (stdout, stderr) = proc.communicate(input_str.encode())
+            osnull.close()
 
-    #    else:
-    #        proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-    #        (stdout, stderr) = proc.communicate()
+        else:
+            proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+            (stdout, stderr) = proc.communicate()
 
-    #    return stdout.decode()
+        return stdout.decode()
 
 
+    def _blast(self, genome):
+        """
+        Blast seed sequence against db using BLASTP
+        """
+        blast_settings = self.settings.blast_settings
 
-    #def __blast(self, genome):
-    #    """
-    #    Blast seed sequence against db using BLASTP
-    #    """
-    #    blast_settings = self.settings.blast_settings
+        blastp_path = self.settings.binary_paths['blastp']
+        blast_cmd = "{0} -db {1} " \
+                    " -evalue {2} -max_target_seqs {3}" \
+                    " -outfmt 5".format(blastp_path,
+                                        genome,
+                                        blast_settings['evalue'],
+                                        blast_settings['num_seqs'])
 
-    #    blastp_path = self.settings.binary_paths['blastp'])
-    #    blast_cmd = "{0} -db {1} " \
-    #                " -evalue {2} -max_target_seqs {3}" \
-    #                " -outfmt 5".format(blastp_path,
-    #                                    genome,
-    #                                    blast_settings['e_value'],
-    #                                    blast_settings['num_seqs'])
+        blast_output = dg.utils.execute_cmd(blast_cmd, input_str=self.seed)
 
-    #    blast_output = self.__execute_cmd(blast_cmd, input_str=self.seed)
-
-    #    return blast_output
+        return blast_output
 
 
     #def __parse_blast(self, blast_output):

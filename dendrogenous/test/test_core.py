@@ -145,36 +145,40 @@ class TestCore(BaseTestCase):
         self.assertEqual(fixed_chars, "_blah_t")
 
 
+    def test__blast(self):
+        mock_settings = mock.Mock(dg.settings.Settings)
+        mock_settings.output_dir = "testdir"
+        mock_settings.binary_paths = {'blastp': os.path.join(self.binary_path, "blastp")}
+        mock_settings.blast_settings = {'num_seqs': 1,
+                                        'evalue': 1e-5}
+        genome = os.path.join(self.test_resources, "Escherichia_coli_O157_H7_str._Sakai.fas")
 
+        binary_paths = os.path.join("dendrogenous", "dependencies")
+        test_class = dg.core.Dendrogenous(self.test_record,
+                                          mock_settings)
 
-    #def test__blast(self):
-    #    """
-    #    Test blast function returns output
-    #    """
-    #    blast_output = self.test._blast("Escherichia_coli_O157_H7_str._Sakai.fas")
+        expected_output = self.parse_file(os.path.join(self.test_resources,
+                                                       "expected_core_blastp_output.xml"))
 
-    #    expected_output = self.parse_file(os.path.join(self.test_resources,
-    #                                                   "expected_core_blastp_output.xml"))
+        blast_output = test_class._blast(genome)
+        self.assertEqual(blast_output.split(os.linesep), expected_output)
 
-    #    self.assertEqual(blast_output.split(os.linesep), expected_output)
+    @unittest.skip('tests local server')
+    def test__parse(self):
+        """
+        Ensure correct parsing of hits locally when connected to server
+        """
 
+        blastp_xml = self.parse_file(os.path.join(self.test_resources,
+                                                  "expected_core_blastp_output.xml"))
 
-    #@unittest.skip('tests local server')
-    #def test__parse(self):
-    #    """
-    #    Ensure correct parsing of hits locally when connected to server
-    #    """
+        blastp_output = "\n".join(blastp_xml)
 
-    #    blastp_xml = self.parse_file(os.path.join(self.test_resources,
-    #                                              "expected_core_blastp_output.xml"))
+        parsed_blast = self.test._parse_blast(blastp_output)
 
-    #    blastp_output = "\n".join(blastp_xml)
+        expected_parsed_hit_id = '15829270'
 
-    #    parsed_blast = self.test._parse_blast(blastp_output)
-
-    #    expected_parsed_hit_id = '15829270'
-
-    #    self.assertEqual(parsed_blast[0].id, expected_parsed_hit_id)
+        self.assertEqual(parsed_blast[0].id, expected_parsed_hit_id)
 
     #def test_get_seqs(self):
     #    """
