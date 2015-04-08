@@ -22,46 +22,10 @@ from Bio.Alphabet import IUPAC
 
 from dendrogenous.test.base import BaseTestCase
 
-class TestCore(BaseTestCase):
+class TestCoreInit(BaseTestCase):
     """
-    Unit tests for the core dendrogeous class and its methods
+    Unit tests for the core dendrogeous init and reform methods
     """
-    @classmethod
-    def setUpClass(cls):
-        """
-        Generate structures required for testing just dendrogenous core class
-        """
-        cls.test_record = SeqRecord(\
-                   Seq("MKQHKAMIVALIVICITAVVAALVTRKDLCEVHIRTGQTEGGEEEEVAVF",
-                   IUPAC.protein),
-                   id="YP_025292.1", name="HokC",
-                   description="toxic membrane protein, small")
-
-        #cls.settings = {"genome_list" : ["Escherichia_coli_IAI39.fas",
-        #                                 "Escherichia_coli_O157_H7_str._Sakai.fas",
-        #                                 "Nanoarchaeum_equitans_Kin4-M.fas"],
-        #                "genome_dir" : os.path.join('dendrogenous',
-        #                                            'test',
-        #                                            'resources'),
-        #                "output_dir" : 'core_test_dir',
-        #                "binary_path": os.path.join('dendrogenous',
-        #                                            'dependencies'),
-        #                "db_config" : {"host": "REDACTED",
-        #                               "db": "new_proteins",
-        #                               "user": "orchard",
-        #                               "passwd": "REDACTED"},
-        #                "minimum_seqs": 3}
-
-        #output_dir = cls.settings['output_dir']
-        #subdirs = ['sequences',
-        #           'alignments',
-        #           'masks',
-        #           'phylogenies', os.path.join('phylogenies', 'coded_named')]
-        #if not os.path.exists(output_dir):
-        #    os.mkdir(output_dir)
-        #    for subdir in subdirs:
-        #        os.mkdir(os.path.join(output_dir, subdir))
-
     def setUp(self):
         #self.test_class = dg.core.Dendrogenous(self.test_record,
         #                                       self.settings)
@@ -150,6 +114,22 @@ class TestCore(BaseTestCase):
 
         fixed_chars = dg.core.Dendrogenous._reformat_accession(bad_char)
         self.assertEqual(fixed_chars, "_blah_t")
+
+
+class TestCoreGetSeqs(BaseTestCase):
+    """
+    Test the components of the get_seqs method and the _blast and _parse
+    functions it relies on
+    """
+
+    def setUp(self):
+        #self.test_class = dg.core.Dendrogenous(self.test_record,
+        #                                       self.settings)
+        self.test_record = SeqRecord(\
+                   Seq("MKQHKAMIVALIVICITAVVAALVTRKDLCEVHIRTGQTEGGEEEEVAVF",
+                   IUPAC.protein),
+                   id="YP_025292.1", name="HokC",
+                   description="toxic membrane protein, small")
 
 
     def test__blast_runs(self):
@@ -257,7 +237,6 @@ class TestCore(BaseTestCase):
         test_class = dg.core.Dendrogenous(self.test_record,
                                           mock_settings)
 
-
         test_class.get_seqs()
 
         expected_output_file = os.path.join('testdir', 'blast_out', 'YP_025292_1.fas')
@@ -303,6 +282,7 @@ class TestCore(BaseTestCase):
         test_class = dg.core.Dendrogenous(self.test_record,
                                           mock_settings)
 
+
         test_class.get_seqs()
 
         expected_output_file = os.path.join('testdir', 'blast_out', 'insufficient', 'YP_025292_1.insufficient_hits')
@@ -313,17 +293,16 @@ class TestCore(BaseTestCase):
             print(seqs)
             self.assertEqual(len(seqs), 5)
 
-
-
-
-        #else:
-        #    self.assertFail()
-
     def tearDown(self):
         if os.path.exists('testdir'):
             shutil.rmtree('testdir')
 
 
+class TestPhylogenyPipe(BaseTestCase):
+    """
+    Test remaining functions used in dg core class phylogeny pipe
+    """
+    pass
 
     #def test_get_seqs_insufficient(self):
     #    """
