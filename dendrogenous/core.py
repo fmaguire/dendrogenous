@@ -53,7 +53,7 @@ class Dendrogenous():
         self.seq_hits = os.path.join(self.settings.dir_paths['blast_hits'],
                                     self.seq_name) + '.fas' # file containing blast hits
 
-        self.aligned_seqs = os.path.join(self.settings.dir_paths['alignment'], self.seq_name + ".aligned")
+        self.aligned_seqs = os.path.join(self.settings.dir_paths['alignment'], self.seq_name + ".afa")
         self.masked_seqs = os.path.join(self.settings.dir_paths['mask'], self.seq_name + ".mask")
         self.phylogeny = os.path.join(self.settings.dir_paths['tree'], self.seq_name + ".tre")
 
@@ -110,7 +110,7 @@ class Dendrogenous():
                                         blast_settings['evalue'],
                                         blast_settings['num_seqs'])
 
-        blast_output = dg.utils.execute_cmd(blast_cmd, input_str=self.seed)
+        blast_output = dg.utils.execute_cmd(blast_cmd, input_str=self.seed, output_str=True)
 
         return blast_output
 
@@ -178,8 +178,10 @@ class Dendrogenous():
             self.get_seqs()
 
 
-        align_cmd = "kalign -i {0} -o {1}".format(self.seq_hits,
-                                                  self.aligned_seqs)
+        kalign_path = self.settings.binary_paths['kalign']
+        align_cmd = "{0} -i {1} -o {2}".format(kalign_path,
+                                               self.seq_hits,
+                                               self.aligned_seqs)
         dg.utils.execute_cmd(align_cmd)
 
     def mask(self):
@@ -192,16 +194,19 @@ class Dendrogenous():
         if not os.path.exists(self.aligned_seqs):
             self.align()
 
-        mask_cmd = "trimal -in {0} -out {1} -nogaps".format(self.aligned_seqs,
-                                                            self.masked_seqs)
+        trimal_path = self.settings.binary_paths['trimal']
+        mask_cmd = "{0} -in {1} -out {2} -nogaps".format(trimal_path,
+                                                         self.aligned_seqs,
+                                                         self.masked_seqs)
         dg.utils.execute_cmd(mask_cmd)
 
         # check if mask is big enough
         mask_length = dg.utils.mask_check(self.masked_seqs)
 
         if mask_length < settings.cut_off:
-            remask_cmd = "trimal -in {0}" \
-                         " -out {1} -automated1".format(self.aligned_seqs,
+            remask_cmd = "{0} -in {1}" \
+                         " -out {2} -automated1".format(trimal_path,
+                                                        self.aligned_seqs,
                                                         self.masked_seqs)
             dg.utils.execute_cmd(remask_cmd)
 
@@ -218,10 +223,23 @@ class Dendrogenous():
         if not os.path.exists(self.masked_seqs):
             self.mask()
 
-        phylogeny_cmd = "FastTree -bionj -slow"\
-                        " -quiet -out {1} {0}".format(self.masked_seqs,
+        fasttree_path = self.settings.binary_paths['fasttree']
+        phylogeny_cmd = "{0} -bionj -slow"\
+                        " -quiet -out {2} {1}".format(fasttree_path,
+                                                      self.masked_seqs,
                                                       self.phylogeny)
         dg.utils.execute_cmd(phylogeny_cmd)
+
+MA
+MA
+MA
+M
+MA   ADD AASSERTIONS OUTPUTFILE IS CREATED
+MA
+MAA
+M
+AAA
+
 
     #def name(self):
     #    """

@@ -50,3 +50,9 @@ class BaseTestCase(unittest.TestCase):
                           if len(x) > 0]
         return stdout_list
 
+    def touch(self, filename):
+        """
+        UNIX touch facility to make a file
+        """
+        with open(filename, 'a'):
+            os.utime(filename, None)

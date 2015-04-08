@@ -12,6 +12,7 @@ import shutil
 import sys
 import pytest
 import pickle
+import time
 
 from socket import gethostname
 
@@ -330,21 +331,121 @@ class TestPhylogenyPipe(BaseTestCase):
     """
     Test remaining functions used in dg core class phylogeny pipe
     """
-    pass
+    def setUp(self):
+        self.test_record = SeqRecord(\
+                   Seq("MKQHKAMIVALIVICITAVVAALVTRKDLCEVHIRTGQTEGGEEEEVAVF",
+                   IUPAC.protein),
+                   id="test")
+        self.test_dir = 'testdir2'
 
-    #def test_get_seqs_insufficient(self):
-    #    """
-    #    Test that dendrogenous.get_seqs() correctly renames parsed blast hit
-    #    output file if there are not sufficient numbers of sequences
-    #    Ensure state is correctly updated
-    #    """
-    #    pass
-    #    #self.fail()
+        dir_paths = {"run_data": "run_data",
+                     "input_seqs": "0.sequences",
+                     "blast_hits": "1.blast_hits",
+                     "blast_fail": os.path.join("1.blast_hits", "insufficient_hits"),
+                     "alignment": "2.alignment",
+                     "mask": "3.mask",
+                     "mask_fail": os.path.join("3.mask", "insufficient_sites"),
+                     "tree": "4.phylogeny",
+                     "name": "5.name"}
 
-    #def test_align(self):
-    #    """
+        for key in dir_paths.keys():
+            dir_paths[key] = os.path.join(self.test_dir, dir_paths[key])
 
-    #    """
+        self.dir_paths = dir_paths
+        os.mkdir(self.test_dir)
+
+    def test_align(self):
+        """
+        Check align runs correctly
+        """
+        mock_settings = mock.Mock(dg.settings.Settings)
+        mock_settings.dir_paths = self.dir_paths
+        mock_settings.binary_paths = {'kalign': os.path.join(self.binary_path, "kalign")}
+
+        os.mkdir(self.dir_paths['blast_hits'])
+        os.mkdir(self.dir_paths['alignment'])
+
+        shutil.copy(os.path.join(self.test_resources, 'test.fas'), self.dir_paths['blast_hits'])
+
+        expected_file = os.path.join(self.dir_paths['alignment'], 'test.afa')
+        test_class = dg.core.Dendrogenous(self.test_record,
+                                          mock_settings)
+
+        with mock.patch.object(test_class, 'get_seqs', return_value=None) as mock_method:
+            test_class.align()
+
+        self.assertTrue(os.path.exists(expected_file))
+        self.assertFalse(mock_method.called)
+
+
+    def test_align_calls_seqs_if_seqs_missing(self):
+        """
+        Check align runs called get_seqs if seqs file is missing
+        """
+        mock_settings = mock.Mock(dg.settings.Settings)
+        mock_settings.dir_paths = self.dir_paths
+        mock_settings.binary_paths = {'kalign': os.path.join(self.binary_path, "kalign")}
+        os.mkdir(self.dir_paths['blast_hits'])
+        os.mkdir(self.dir_paths['alignment'])
+
+        test_class = dg.core.Dendrogenous(self.test_record,
+                                          mock_settings)
+
+        with mock.patch.object(test_class, 'get_seqs', return_value=None) as mock_method:
+            test_class.align()
+
+        self.assertTrue(mock_method.called)
+
+    def test_mask(self):
+        """
+        Check mask runs correctly
+        """
+        mock_settings = mock.Mock(dg.settings.Settings)
+        mock_settings.dir_paths = self.dir_paths
+        mock_settings.binary_paths = {'trimal': os.path.join(self.binary_path, "trimal")}
+
+        os.mkdir(self.dir_paths['alignment'])
+        os.mkdir(self.dir_paths['trimal'])
+
+        shutil.copy(os.path.join(self.test_resources, 'test.afa'), self.dir_paths['alignment'])
+
+        expected_file = os.path.join(self.dir_paths['alignment'], 'test.afa')
+        test_class = dg.core.Dendrogenous(self.test_record,
+                                          mock_settings)
+
+        with mock.patch.object(test_class, 'get_seqs', return_value=None) as mock_method:
+            test_class.align()
+
+        self.assertTrue(os.path.exists(expected_file))
+        self.assertFalse(mock_method.called)
+
+
+    def test_align_calls_seqs_if_seqs_missing(self):
+        """
+        Check align runs called get_seqs if seqs file is missing
+        """
+        mock_settings = mock.Mock(dg.settings.Settings)
+        mock_settings.dir_paths = self.dir_paths
+        mock_settings.binary_paths = {'kalign': os.path.join(self.binary_path, "kalign")}
+        os.mkdir(self.dir_paths['blast_hits'])
+        os.mkdir(self.dir_paths['alignment'])
+
+        test_class = dg.core.Dendrogenous(self.test_record,
+                                          mock_settings)
+
+        with mock.patch.object(test_class, 'get_seqs', return_value=None) as mock_method:
+            test_class.align()
+
+        self.assertTrue(mock_method.called)
+
+
+    def tearDown(self):
+        if os.path.exists(self.test_dir):
+            shutil.rmtree(self.test_dir)
+
+
+
+
     #    pass
     #    #self.fail()
 

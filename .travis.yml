@@ -6,11 +6,8 @@ python:
 
 install: 
   - "pip install -r requirements.txt --use-mirrors"
-  - "pip install coverage"
-  - "pip install coveralls"
+  - "pip install py.test"
+  - "pip install -e ."
 
 script: 
-  - "coverage run --source=dendrogenous setup.py test"
-
-after_success:
-    coveralls
+  - "py.test dendrogenous/test" 
