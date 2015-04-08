@@ -145,76 +145,81 @@ class Dendrogenous():
         return hit_records
 
 
-    #def get_seqs(self):
-    #    """
-    #    Get similar sequences to seed by blasting genomes and parsing the output
-    #    """
-    #    self.output_seqs = os.path.join(self.output_dir, "sequences",
-    #                                    self.seq_name) # file containing blast hits
-    #    num_hits = 0
-    #    for genome in self.settings['genome_list']:
-    #        blast_output = self._blast(genome)
-    #        blast_hits = self._parse_blast(blast_output)
-    #        num_hits += len(blast_hits)
-    #        SeqIO.write(blast_hits, self.output_seqs, 'fasta')
+    def get_seqs(self):
+        """
+        Get similar sequences to seed by blasting genomes and parsing the output
+        """
+        self.seq_hits = os.path.join(self.settings.dir_paths['blast_hits'],
+                                    self.seq_name) + '.fas' # file containing blast hits
+        num_hits = 0
+        for genome in self.settings.genomes:
+            blast_output = self._blast(genome)
+            blast_hits = self._parse_blast(blast_output)
+            num_hits += len(blast_hits)
+            print(num_hits)
+            with open(self.seq_hits, 'a') as out_fh:
+                SeqIO.write(blast_hits, out_fh, 'fasta')
 
-    #    if num_hits < self.settings['minimum_seqs']:
-    #        os.rename(self.output_seqs,
-    #                  self.output_seqs+ '_too_few_seqs_for_alignment')
+        if num_hits < self.settings.minimums['min_seqs']:
+            os.rename(self.seq_hits,
+                      os.path.join(self.settings.dir_paths['blast_fail'], self.seq_name + ".insufficient_hits"))
+            self.settings.logger.warning("Too few blastp hits for alignment: {}".format(self.seq_name))
 
-    #    assert False
+    def align(self):
+        """
+        Align input seqs using kalign
+        """
+        if not os.path.exists(self.seq_hits):
+            self.get_seqs()
 
-    #def align(self):
-    #    """
-    #    Align input seqs using kalign
-    #    """
+        self.aligned_seqs = os.path.join(self.output_dir, "2.alignment", self.seq_name + ".aligned")
 
-    #    if not os.path.exists(ALIGNMENT_FILE):
-    #        self.seqs()
+        align_cmd = "kalign -i {0} -o {1}".format(self.seq_hits,
+                                                  self.aligned_seqs)
+        dg.utils.execute_cmd(align_cmd)
 
-    #    align_cmd = "kalign -i {0} -o {1}".format(input_seqs,
-    #                                          output_aligned_seqs)
-    #    utils.execute_cmd(align_cmd)
+    def mask(self):
+        '''
+        Mask input alignment using trimal.
+        Method reruns trimal with automated setting if mask is too short
+        If mask is still too short it is moved to fail directory
+        '''
 
-    #def mask(self):
-    #    '''Mask input alignment using trimal'''
+        if not os.path.exists(self.aligned_seqs):
+            self.align()
 
-    #    if not os.path.exists(alignment_file):
-    #        self.align()
+        self.masked_seqs = os.path.join(self.output_dir, "3.mask", self.seq_name + ".mask")
+        mask_cmd = "trimal -in {0} -out {1} -nogaps".format(self.aligned_seqs,
+                                                            self.masked_seqs)
+        dg.utils.execute_cmd(mask_cmd)
 
-    #    mask_cmd = "trimal -in {0} -out {1} -nogaps".format(input_aligned_seqs,
-    #                                                        output_masked_seqs)
-    #    utils.execute_cmd(mask_cmd)
+        # check if mask is big enough
+        mask_length = dg.utils.mask_check(self.masked_seqs)
 
-    #    mask_length = accessories.mask_check(output_masked_seqs)
+        if mask_length < settings.cut_off:
+            remask_cmd = "trimal -in {0}" \
+                         " -out {1} -automated1".format(self.aligned_seqs,
+                                                        self.masked_seqs)
+            dg.utils.execute_cmd(remask_cmd)
 
-    #    if mask_length < cut_off:
-    #        remask_cmd = "trimal -in {0}" \
-    #                     " -out {1} -automated1".format(input_aligned_seqs,
-    #                                                    output_masked_seqs)
-    #        utils.execute_cmd(remask_cmd)
-    #        new_mask_length = self.mask_check(output_masked_seqs)
-    #        if mask_length < cut_off:
-    #            mask_error = "{0} is" \
-    #                         " too short" \
-    #                         " after masking".format(output_masked_seqs)
-    #            os.rename(output_masked_seqs,
-    #                      output_masked_seqs + "_mask_too_short")
+            new_mask_length = dg.utils.mask_check(self.masked_seqs)
+            if mask_length < settings.cut_off:
+                self.settings.logger.warning("Too few sites hits after mask: {}".format(self.seq_name))
+                os.rename(self.masked_seqs,
+                          os.path.join(self.output_dir, "3.mask", "insufficient_sites",
+                                       self.seq_name + ".mask_too_short"))
 
-    #            # write to sqlite db
+    def phylogeny(self):
+        '''Generate phylogeny from masked seqs using FastTree2'''
 
+        if not os.path.exists(self.masked_seqs):
+            self.mask()
 
-    #def phylogeny(self):
-    #    '''Generate phylogeny from masked seqs using FastTree2'''
-
-    #    if not os.path.exists(self.mask_file)
-    #        self.mask()
-
-    #    phylogeny_cmd = "FastTree -bionj -slow" \
-    #                    " -quiet -out {1} {0}".format(input_masked_seqs,
-    #                                                  output_phylogeny)
-    #    utils.execute_cmd(phylogeny_cmd)
-
+        self.phylogeny = os.path.join(self.output_dir, "4.phylogeny", self.seq_name + ".tre")
+        phylogeny_cmd = "FastTree -bionj -slow" \
+                        " -quiet -out {1} {0}".format(self.masked_seqs,
+                                                      self.phylogeny)
+        dg.utils.execute_cmd(phylogeny_cmd)
 
     #def name(self):
     #    """

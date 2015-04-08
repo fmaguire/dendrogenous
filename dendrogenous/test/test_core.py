@@ -15,6 +15,7 @@ import pickle
 
 from socket import gethostname
 
+from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio.Alphabet import IUPAC
@@ -225,15 +226,103 @@ class TestCore(BaseTestCase):
         #self.assertIs(test_class.logger.error, "foobar")
 
 
-    #def test_get_seqs(self):
-    #    """
-    #    Test dendrogenous.get_seqs() works correctly and writes a file of seqs
-    #    to the appropriate directory
-    #    Ensure state is correctly updated
-    #    """
-    #    #self.test.get_seqs()
-    #    ##for some reason I can't even inspect these
-    #    #self.fail()
+    @pytest.mark.skipif("gethostname() != 'zorya'")
+    def test_get_seqs(self):
+        """
+        Test dendrogenous.get_seqs() works correctly and writes a file of seqs
+        to the appropriate directory - integration test with _blast and _parse
+        """
+
+        #configure all the dependencies in a mock settings object
+        mock_settings = mock.Mock(dg.settings.Settings)
+        mock_settings.output_dir = "testdir"
+        mock_settings.dir_paths = {'blast_hits': os.path.join("testdir", 'blast_out')}
+        mock_settings.binary_paths = {'blastp': os.path.join(self.binary_path, "blastp")}
+        mock_settings.minimums = {'min_seqs': 3}
+        mock_settings.blast_settings = {'num_seqs': 2,
+                                        'evalue': 5}
+        mock_settings.genomes= [os.path.join(self.test_resources, "Escherichia_coli_O157_H7_str._Sakai.fas"),
+                                os.path.join(self.test_resources, "Escherichia_coli_IAI39.fas"),
+                                os.path.join(self.test_resources, "Nanoarchaeum_equitans_Kin4-M.fas")]
+        mock_settings.logger = logging.getLogger("test")
+
+        # make output dir that is normally done by runner
+        os.mkdir('testdir')
+        os.mkdir(mock_settings.dir_paths['blast_hits'])
+
+        # load db settings from secret pickle file
+        with open(os.path.join(self.test_resources, 'secret.pickle'), 'rb') as secret:
+            mock_settings.db_config = pickle.load(secret)
+
+        test_class = dg.core.Dendrogenous(self.test_record,
+                                          mock_settings)
+
+
+        test_class.get_seqs()
+
+        expected_output_file = os.path.join('testdir', 'blast_out', 'YP_025292_1.fas')
+        self.assertTrue(os.path.exists(expected_output_file))
+
+        with open(expected_output_file, 'r') as out_fh:
+            seqs = list(SeqIO.parse(out_fh, 'fasta'))
+            print(seqs)
+            self.assertEqual(len(seqs), 5)
+
+
+    @pytest.mark.skipif("gethostname() != 'zorya'")
+    def test_get_seqs_fails_correctly(self):
+        """
+        Test dendrogenous.get_seqs() works correctly and writes a file of seqs
+        to the appropriate directory - integration test with _blast and _parse
+        Test it correctly identifies too few hits and moves file to insufficient hits dir
+        """
+
+        #configure all the dependencies in a mock settings object
+        mock_settings = mock.Mock(dg.settings.Settings)
+        mock_settings.output_dir = "testdir"
+        mock_settings.dir_paths = {'blast_hits': os.path.join("testdir", 'blast_out'),
+                                   'blast_fail': os.path.join("testdir", "blast_out", "insufficient")}
+        mock_settings.binary_paths = {'blastp': os.path.join(self.binary_path, "blastp")}
+        mock_settings.minimums = {'min_seqs': 10}
+        mock_settings.blast_settings = {'num_seqs': 2,
+                                        'evalue': 5}
+        mock_settings.genomes= [os.path.join(self.test_resources, "Escherichia_coli_O157_H7_str._Sakai.fas"),
+                                os.path.join(self.test_resources, "Escherichia_coli_IAI39.fas"),
+                                os.path.join(self.test_resources, "Nanoarchaeum_equitans_Kin4-M.fas")]
+        mock_settings.logger = logging.getLogger("test")
+
+        # make output dir that is normally done by runner
+        os.mkdir('testdir')
+        os.mkdir(mock_settings.dir_paths['blast_hits'])
+        os.mkdir(mock_settings.dir_paths['blast_fail'])
+
+        # load db settings from secret pickle file
+        with open(os.path.join(self.test_resources, 'secret.pickle'), 'rb') as secret:
+            mock_settings.db_config = pickle.load(secret)
+
+        test_class = dg.core.Dendrogenous(self.test_record,
+                                          mock_settings)
+
+        test_class.get_seqs()
+
+        expected_output_file = os.path.join('testdir', 'blast_out', 'insufficient', 'YP_025292_1.insufficient_hits')
+        self.assertTrue(os.path.exists(expected_output_file))
+
+        with open(expected_output_file, 'r') as out_fh:
+            seqs = list(SeqIO.parse(out_fh, 'fasta'))
+            print(seqs)
+            self.assertEqual(len(seqs), 5)
+
+
+
+
+        #else:
+        #    self.assertFail()
+
+    def tearDown(self):
+        if os.path.exists('testdir'):
+            shutil.rmtree('testdir')
+
 
 
     #def test_get_seqs_insufficient(self):
