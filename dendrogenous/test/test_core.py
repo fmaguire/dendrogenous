@@ -35,10 +35,25 @@ class TestCoreInit(BaseTestCase):
                    id="YP_025292.1", name="HokC",
                    description="toxic membrane protein, small")
 
+        dir_paths = {"run_data": "run_data",
+                     "input_seqs": "0.sequences",
+                     "blast_hits": "1.blast_hits",
+                     "blast_fail": os.path.join("1.blast_hits", "insufficient_hits"),
+                     "alignment": "2.alignment",
+                     "mask": "3.mask",
+                     "mask_fail": os.path.join("3.mask", "insufficient_sites"),
+                     "tree": "4.phylogeny",
+                     "name": "5.name"}
+
+        for key in dir_paths.keys():
+            dir_paths[key] = os.path.join('testdir', dir_paths[key])
+
+        self.dir_paths = dir_paths
+
+
 
     def init_core():
         mock_settings = mock.Mock(dg.settings.Settings)
-        mock_settings.output_dir = "testdir"
         test_class = dg.core.Dendrogenous(test_record,
                                           mock_settings)
         return test_class
@@ -48,7 +63,7 @@ class TestCoreInit(BaseTestCase):
         Ensure class init works when provided a seqrecord and settings file
         """
         settings = mock.Mock(dg.settings.Settings)
-        settings.output_dir = "testdir"
+        settings.dir_paths = self.dir_paths
 
         test_class = dg.core.Dendrogenous(self.test_record,
                                           settings)
@@ -59,7 +74,7 @@ class TestCoreInit(BaseTestCase):
 
         self.assertEqual(test_class.seed, expected_seed)
         self.assertEqual(test_class.seq_name, expected_name)
-        self.assertEqual(test_class.output_dir, settings.output_dir)
+        self.assertEqual(test_class.settings.dir_paths, self.dir_paths)
 
 
     def test_init_bad_seqrecord(self):
@@ -67,7 +82,6 @@ class TestCoreInit(BaseTestCase):
         Ensure ValueError is raised if class is instantiated without valid seqrecord
         """
         settings = mock.Mock(dg.settings.Settings)
-        settings.output_dir = "testdir"
 
         invalid_seq = ""
 
@@ -131,13 +145,29 @@ class TestCoreGetSeqs(BaseTestCase):
                    id="YP_025292.1", name="HokC",
                    description="toxic membrane protein, small")
 
+        dir_paths = {"run_data": "run_data",
+                     "input_seqs": "0.sequences",
+                     "blast_hits": "1.blast_hits",
+                     "blast_fail": os.path.join("1.blast_hits", "insufficient_hits"),
+                     "alignment": "2.alignment",
+                     "mask": "3.mask",
+                     "mask_fail": os.path.join("3.mask", "insufficient_sites"),
+                     "tree": "4.phylogeny",
+                     "name": "5.name"}
+
+        for key in dir_paths.keys():
+            dir_paths[key] = os.path.join('testdir', dir_paths[key])
+
+        self.dir_paths = dir_paths
+
+
 
     def test__blast_runs(self):
         """
         Make sure the __blast method correctly runs and returns decoded xml output
         """
         mock_settings = mock.Mock(dg.settings.Settings)
-        mock_settings.output_dir = "testdir"
+        mock_settings.dir_paths = self.dir_paths
         mock_settings.binary_paths = {'blastp': os.path.join(self.binary_path, "blastp")}
         mock_settings.blast_settings = {'num_seqs': 1,
                                         'evalue': 1e-5}
@@ -159,7 +189,8 @@ class TestCoreGetSeqs(BaseTestCase):
         Ensure correct parsing of hits locally when connected to server
         """
         mock_settings = mock.Mock(dg.settings.Settings)
-        mock_settings.output_dir = "testdir"
+        mock_settings.dir_paths = self.dir_paths
+
         with open(os.path.join(self.test_resources, 'secret.pickle'), 'rb') as secret:
             mock_settings.db_config = pickle.load(secret)
 
@@ -185,7 +216,7 @@ class TestCoreGetSeqs(BaseTestCase):
         Ensure correct parsing of hits locally when connected to server
         """
         mock_settings = mock.Mock(dg.settings.Settings)
-        mock_settings.output_dir = "testdir"
+        mock_settings.dir_paths = self.dir_paths
         mock_settings.logger = logging.getLogger("test")
 
         with open(os.path.join(self.test_resources, 'secret.pickle'), 'rb') as secret:
@@ -215,8 +246,7 @@ class TestCoreGetSeqs(BaseTestCase):
 
         #configure all the dependencies in a mock settings object
         mock_settings = mock.Mock(dg.settings.Settings)
-        mock_settings.output_dir = "testdir"
-        mock_settings.dir_paths = {'blast_hits': os.path.join("testdir", 'blast_out')}
+        mock_settings.dir_paths = self.dir_paths
         mock_settings.binary_paths = {'blastp': os.path.join(self.binary_path, "blastp")}
         mock_settings.minimums = {'min_seqs': 3}
         mock_settings.blast_settings = {'num_seqs': 2,
@@ -239,7 +269,7 @@ class TestCoreGetSeqs(BaseTestCase):
 
         test_class.get_seqs()
 
-        expected_output_file = os.path.join('testdir', 'blast_out', 'YP_025292_1.fas')
+        expected_output_file = os.path.join(self.dir_paths['blast_hits'], 'YP_025292_1.fas')
         self.assertTrue(os.path.exists(expected_output_file))
 
         with open(expected_output_file, 'r') as out_fh:
@@ -258,9 +288,7 @@ class TestCoreGetSeqs(BaseTestCase):
 
         #configure all the dependencies in a mock settings object
         mock_settings = mock.Mock(dg.settings.Settings)
-        mock_settings.output_dir = "testdir"
-        mock_settings.dir_paths = {'blast_hits': os.path.join("testdir", 'blast_out'),
-                                   'blast_fail': os.path.join("testdir", "blast_out", "insufficient")}
+        mock_settings.dir_paths = self.dir_paths
         mock_settings.binary_paths = {'blastp': os.path.join(self.binary_path, "blastp")}
         mock_settings.minimums = {'min_seqs': 10}
         mock_settings.blast_settings = {'num_seqs': 2,
@@ -285,7 +313,7 @@ class TestCoreGetSeqs(BaseTestCase):
 
         test_class.get_seqs()
 
-        expected_output_file = os.path.join('testdir', 'blast_out', 'insufficient', 'YP_025292_1.insufficient_hits')
+        expected_output_file = os.path.join(self.dir_paths['blast_fail'], 'YP_025292_1.insufficient_hits')
         self.assertTrue(os.path.exists(expected_output_file))
 
         with open(expected_output_file, 'r') as out_fh:

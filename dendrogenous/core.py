@@ -20,6 +20,9 @@ class Dendrogenous():
     Tree generation class with methods for all the steps required to generate
     phylogenies.
 
+    Relies on a pre-existing directory structure
+
+
     Generally the idea of running this class to to instantiate it with
     a seq_record e.g.
 
@@ -47,7 +50,12 @@ class Dendrogenous():
         self.seed = ">{0}\n{1}".format(self.seq_name,
                                        seq_record.seq)
 
-        self.output_dir = self.settings.output_dir
+        self.seq_hits = os.path.join(self.settings.dir_paths['blast_hits'],
+                                    self.seq_name) + '.fas' # file containing blast hits
+
+        self.aligned_seqs = os.path.join(self.settings.dir_paths['alignment'], self.seq_name + ".aligned")
+        self.masked_seqs = os.path.join(self.settings.dir_paths['mask'], self.seq_name + ".mask")
+        self.phylogeny = os.path.join(self.settings.dir_paths['tree'], self.seq_name + ".tre")
 
     @staticmethod
     def _reformat_accession(seq_record):
@@ -149,14 +157,11 @@ class Dendrogenous():
         """
         Get similar sequences to seed by blasting genomes and parsing the output
         """
-        self.seq_hits = os.path.join(self.settings.dir_paths['blast_hits'],
-                                    self.seq_name) + '.fas' # file containing blast hits
         num_hits = 0
         for genome in self.settings.genomes:
             blast_output = self._blast(genome)
             blast_hits = self._parse_blast(blast_output)
             num_hits += len(blast_hits)
-            print(num_hits)
             with open(self.seq_hits, 'a') as out_fh:
                 SeqIO.write(blast_hits, out_fh, 'fasta')
 
@@ -172,7 +177,6 @@ class Dendrogenous():
         if not os.path.exists(self.seq_hits):
             self.get_seqs()
 
-        self.aligned_seqs = os.path.join(self.output_dir, "2.alignment", self.seq_name + ".aligned")
 
         align_cmd = "kalign -i {0} -o {1}".format(self.seq_hits,
                                                   self.aligned_seqs)
@@ -188,7 +192,6 @@ class Dendrogenous():
         if not os.path.exists(self.aligned_seqs):
             self.align()
 
-        self.masked_seqs = os.path.join(self.output_dir, "3.mask", self.seq_name + ".mask")
         mask_cmd = "trimal -in {0} -out {1} -nogaps".format(self.aligned_seqs,
                                                             self.masked_seqs)
         dg.utils.execute_cmd(mask_cmd)
@@ -206,7 +209,7 @@ class Dendrogenous():
             if mask_length < settings.cut_off:
                 self.settings.logger.warning("Too few sites hits after mask: {}".format(self.seq_name))
                 os.rename(self.masked_seqs,
-                          os.path.join(self.output_dir, "3.mask", "insufficient_sites",
+                          os.path.join(self.settings.dir_paths['mask_fail'],
                                        self.seq_name + ".mask_too_short"))
 
     def phylogeny(self):
@@ -215,8 +218,7 @@ class Dendrogenous():
         if not os.path.exists(self.masked_seqs):
             self.mask()
 
-        self.phylogeny = os.path.join(self.output_dir, "4.phylogeny", self.seq_name + ".tre")
-        phylogeny_cmd = "FastTree -bionj -slow" \
+        phylogeny_cmd = "FastTree -bionj -slow"\
                         " -quiet -out {1} {0}".format(self.masked_seqs,
                                                       self.phylogeny)
         dg.utils.execute_cmd(phylogeny_cmd)

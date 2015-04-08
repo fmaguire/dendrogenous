@@ -31,7 +31,7 @@ class Settings():
 
         default_settings = (('output_dir', 'out'),
                             ('minimums', {'min_seqs': 3,
-                                          'min_sites': 30}),
+                                          'min_sites': 29}),
                             ('blast_settings', {'num_seqs': 1,
                                                 'evalue': 1e-5})
                             ('binary_paths', {'blastp': 'blastp',
@@ -44,10 +44,10 @@ class Settings():
         for field, setting in default_settings:
             self.full_settings[field] = user_input.get(field, setting)
 
-        self.logger = __get_logger(self.log_level)
+        self.logger = __get_logger()
 
 
-    def __get_logger(self, log_level):
+    def __get_logger(self):
         """
         Initialise and return logger
         """
