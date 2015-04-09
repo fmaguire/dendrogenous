@@ -230,16 +230,6 @@ class Dendrogenous():
                                                       self.phylogeny)
         dg.utils.execute_cmd(phylogeny_cmd)
 
-MA
-MA
-MA
-M
-MA   ADD AASSERTIONS OUTPUTFILE IS CREATED
-MA
-MAA
-M
-AAA
-
 
     #def name(self):
     #    """
