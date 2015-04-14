@@ -4,7 +4,7 @@ import os
 import subprocess
 
 
-def execute_cmd(cmd, input_str=None, output_str=False):
+def execute_cmd(cmd, input_str=None, output_str=False, debug=False):
     """
     Execute a command using subprocess using a string as stdin
     and returns the stdout as a string if an input_str is provided
@@ -25,6 +25,9 @@ def execute_cmd(cmd, input_str=None, output_str=False):
         proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
         (stdout, stderr) = proc.communicate()
         return stdout.decode()
+
+    elif debug:
+        subprocess.call(cmd, shell=True)
 
     else:
         with open(os.devnull, 'w') as null:

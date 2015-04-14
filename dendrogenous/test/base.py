@@ -3,6 +3,7 @@
 Base classes for unit testing
 """
 import unittest
+import hashlib
 import subprocess
 import os
 
@@ -49,6 +50,26 @@ class BaseTestCase(unittest.TestCase):
         stdout_list = [x for x in stdout.decode().split(os.linesep) \
                           if len(x) > 0]
         return stdout_list
+
+    def assertFileSame(self, file1, file2):
+        """
+        Assert two files have the same hash
+        """
+        self.assertEqual(self.file_hash(file1), self.file_hash(file2))
+
+    def file_hash(self, file_name):
+        """
+        Calculate md5sum of a given file
+        """
+        hasher = hashlib.md5()
+        with open(file_name, 'rb') as fh:
+            buf = fh.read()
+            hasher.update(buf)
+            print(hasher.hexdigest())
+            return hasher.hexdigest()
+            return hasher.hexdigest()
+
+
 
     def touch(self, filename):
         """

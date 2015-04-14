@@ -198,24 +198,39 @@ class Dendrogenous():
         mask_cmd = "{0} -in {1} -out {2} -nogaps".format(trimal_path,
                                                          self.aligned_seqs,
                                                          self.masked_seqs)
-        dg.utils.execute_cmd(mask_cmd)
+
+        dg.utils.execute_cmd(mask_cmd, debug=True)
 
         # check if mask is big enough
-        mask_length = dg.utils.mask_check(self.masked_seqs)
+        mask_length = self._mask_check()
 
-        if mask_length < settings.cut_off:
+        if mask_length < self.settings.minimums['min_sites']:
             remask_cmd = "{0} -in {1}" \
                          " -out {2} -automated1".format(trimal_path,
                                                         self.aligned_seqs,
                                                         self.masked_seqs)
             dg.utils.execute_cmd(remask_cmd)
 
-            new_mask_length = dg.utils.mask_check(self.masked_seqs)
-            if mask_length < settings.cut_off:
+            new_mask_length = self._mask_check()
+
+            ####this shouldn't be running
+            print(new_mask_length)
+            print(self.settings.minimums['min_sites'])
+            print(int(mask_length) < int(self.settings.minimums['min_sites']))
+            if mask_length < self.settings.minimums['min_sites']:
                 self.settings.logger.warning("Too few sites hits after mask: {}".format(self.seq_name))
                 os.rename(self.masked_seqs,
                           os.path.join(self.settings.dir_paths['mask_fail'],
                                        self.seq_name + ".mask_too_short"))
+
+    def _mask_check(self):
+        """
+        Returns the length of the mask in the mask file
+        Designed for testing if the automated masking needs rerun with different settings
+        """
+        with open(self.masked_seqs, 'rU') as mask_fh:
+            sample_seq = next(SeqIO.parse(mask_fh, "fasta"))
+        return len(sample_seq.seq)
 
     def phylogeny(self):
         '''Generate phylogeny from masked seqs using FastTree2'''

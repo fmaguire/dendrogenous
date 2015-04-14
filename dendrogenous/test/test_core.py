@@ -374,7 +374,7 @@ class TestPhylogenyPipe(BaseTestCase):
         with mock.patch.object(test_class, 'get_seqs', return_value=None) as mock_method:
             test_class.align()
 
-        self.assertTrue(os.path.exists(expected_file))
+        self.assertFileSame(expected_file, os.path.join(self.test_resources, 'test_alignment.afa'))
         self.assertFalse(mock_method.called)
 
 
@@ -396,45 +396,113 @@ class TestPhylogenyPipe(BaseTestCase):
 
         self.assertTrue(mock_method.called)
 
-    def test_mask(self):
+    def test_mask_normal(self):
         """
-        Check mask runs correctly
+        Check mask runs correctly when alignment file exists and mask has enough sites
         """
         mock_settings = mock.Mock(dg.settings.Settings)
         mock_settings.dir_paths = self.dir_paths
+        mock_settings.minimums = {'min_sites': 29}
         mock_settings.binary_paths = {'trimal': os.path.join(self.binary_path, "trimal")}
 
         os.mkdir(self.dir_paths['alignment'])
-        os.mkdir(self.dir_paths['trimal'])
+        os.mkdir(self.dir_paths['mask'])
 
-        shutil.copy(os.path.join(self.test_resources, 'test.afa'), self.dir_paths['alignment'])
+        shutil.copy(os.path.join(self.test_resources, 'test_alignment.afa'),
+                    os.path.join(self.dir_paths['alignment'], 'test.afa'))
 
-        expected_file = os.path.join(self.dir_paths['alignment'], 'test.afa')
+        expected_file = os.path.join(self.dir_paths['mask'], 'test.mask')
         test_class = dg.core.Dendrogenous(self.test_record,
                                           mock_settings)
 
-        with mock.patch.object(test_class, 'get_seqs', return_value=None) as mock_method:
-            test_class.align()
+        with mock.patch.object(test_class, 'align', return_value=None) as mock_method:
+            test_class.mask()
 
-        self.assertTrue(os.path.exists(expected_file))
+        self.assertFileSame(expected_file, os.path.join(self.test_resources, 'test_mask.mask'))
         self.assertFalse(mock_method.called)
 
 
-    def test_align_calls_seqs_if_seqs_missing(self):
+    def test_mask_needs_automated_mask(self):
         """
-        Check align runs called get_seqs if seqs file is missing
+        Check mask correctly reruns trimal with automated if nogaps produces too small a mask
         """
         mock_settings = mock.Mock(dg.settings.Settings)
         mock_settings.dir_paths = self.dir_paths
-        mock_settings.binary_paths = {'kalign': os.path.join(self.binary_path, "kalign")}
-        os.mkdir(self.dir_paths['blast_hits'])
+        mock_settings.minimums = {'min_sites': 40}
+        mock_settings.binary_paths = {'trimal': os.path.join(self.binary_path, "trimal")}
+
         os.mkdir(self.dir_paths['alignment'])
+        os.mkdir(self.dir_paths['mask'])
+
+        shutil.copy(os.path.join(self.test_resources, 'test_alignment_auto_mask.afa'),
+                    os.path.join(self.dir_paths['alignment'], 'test.afa'))
 
         test_class = dg.core.Dendrogenous(self.test_record,
                                           mock_settings)
 
-        with mock.patch.object(test_class, 'get_seqs', return_value=None) as mock_method:
-            test_class.align()
+        expected_file = os.path.join(self.dir_paths['mask'], 'test.mask')
+
+
+###     for some reason the rename is running when it shouldn't
+        with mock.patch.object(test_class, 'align', return_value=None) as mock_method:
+            test_class.mask()
+
+        self.assertTrue(os.path.exists(expected_file))
+        self.assertFileSame(expected_file, os.path.join(self.test_resources, 'test_mask_automated.mask'))
+        self.assertFalse(mock_method.called)
+
+
+    def test_mask_fails_correctly(self):
+        """
+        Ensure mask fails correctly if automated and nogaps masking
+        still results in too short a file
+        """
+        mock_settings = mock.Mock(dg.settings.Settings)
+        mock_settings.dir_paths = self.dir_paths
+        mock_settings.logger = logging.getLogger("test")
+        mock_settings.minimums = {'min_sites': 100}
+        mock_settings.binary_paths = {'trimal': os.path.join(self.binary_path, "trimal")}
+
+        os.mkdir(self.dir_paths['alignment'])
+        os.mkdir(self.dir_paths['mask'])
+        os.mkdir(self.dir_paths['mask_fail'])
+
+        shutil.copy(os.path.join(self.test_resources, 'test_alignment.afa'),
+                    os.path.join(self.dir_paths['alignment'], 'test.afa'))
+
+        test_class = dg.core.Dendrogenous(self.test_record,
+                                          mock_settings)
+
+        test_class.mask()
+
+        not_expected_file = os.path.join(self.dir_paths['mask'], 'test.mask')
+        expected_file = os.path.join(self.dir_paths['mask_fail'], 'test.mask_too_short')
+        self.assertFalse(os.path.exists(not_expected_file))
+        self.assertTrue(os.path.exists(expected_file))
+
+    def test_mask_calls_align_if_alignment_missing(self):
+        """
+        Ensure dg.mask() calls dg.align() if it can't find the alignment file
+        """
+        mock_settings = mock.Mock(dg.settings.Settings)
+        mock_settings.dir_paths = self.dir_paths
+        mock_settings.minimums = {'min_sites': 29}
+        mock_settings.binary_paths = {'trimal': os.path.join(self.binary_path, "trimal")}
+
+        os.mkdir(self.dir_paths['alignment'])
+        os.mkdir(self.dir_paths['mask'])
+
+        expected_file = os.path.join(self.dir_paths['mask'], 'test.mask')
+        test_class = dg.core.Dendrogenous(self.test_record,
+                                          mock_settings)
+
+        # mock align but mask will fail and align is not actually aligning thus
+        # the try/except hack
+        with mock.patch.object(test_class, 'align', return_value=None) as mock_method:
+            try:
+                test_class.mask()
+            except:
+                pass
 
         self.assertTrue(mock_method.called)
 
