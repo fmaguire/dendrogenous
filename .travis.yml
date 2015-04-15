@@ -6,7 +6,7 @@ python:
 before_install:
   - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test 
   - sudo apt-get update
-  - sudo apt-get upgrade -y
+  - sudo apt-get upgrade -y libstdc++6
 
 install: 
   - "pip install -r requirements.txt --use-mirrors"
