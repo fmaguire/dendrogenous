@@ -49,3 +49,4 @@ docs/_build
 
 # secrets
 secret.pickle
+functional_test_settings.json

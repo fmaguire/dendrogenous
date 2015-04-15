@@ -7,7 +7,7 @@ import json
 import logging
 import io
 import pymysql
-
+from Bio import SeqIO
 
 class Settings():
     """
@@ -25,7 +25,7 @@ class Settings():
         """
 
 
-        required_settings = [('genome_list', list), ('genome_dir', str), ('dbconfig', dict)]
+        required_settings = [('input_seqs', str), ('genome_list', list), ('genome_dir', str), ('dbconfig', dict)]
 
         parsed_settings = self.__parse_settings(settings_file)
 
@@ -141,6 +141,24 @@ class Settings():
                 raise TypeError("{0} is incorrectly specified in settings.json should be {1}".format(entry, value_type))
 
         return parsed_user_input
+
+    @property
+    def input_seqs(self):
+        """
+        Validates input seq filename and returns
+        """
+        putative_file = self.full_settings['input_seqs']
+        if os.path.exists(putative_file):
+            putative_file = os.path.abspath(putative_file)
+        else:
+            raise ValueError("specified input_seqs ({}) file does not exist".format(putative_file))
+        try:
+            with open(putative_file, 'rU') as test_fh:
+                sample_seq = next(SeqIO.parse(test_fh, "fasta"))
+        except:
+            raise ValueError("input_seqs fasta file specified in settings.json {} could not be read".format(putative_file))
+
+        return putative_file
 
     @property
     def genomes(self):

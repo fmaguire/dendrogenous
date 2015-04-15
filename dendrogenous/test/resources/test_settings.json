@@ -2,5 +2,6 @@
     "output_dir": "test_out",
     "genome_list": ["a", "b", "c"],
     "dbconfig": {"b": 4},
-    "genome_dir": "string"
+    "genome_dir": "string",
+    "input_seqs": "string"
 }
