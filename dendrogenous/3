@@ -508,75 +508,43 @@ class TestPhylogenyPipe(BaseTestCase):
 
         self.assertTrue(mock_method.called)
 
-    # not sure how to mock masked_seqs to return a given value
-    #def test__mask_check(self):
-    #    """
-    #    ensure mask check returns correct sequence length for first seq in masked
-    #    fasta
-    #    """
-
-    #    mock_settings = mock.Mock(dg.settings.Settings)
-    #    mock_settings.dir_paths = self.dir_paths
-    #    test_class = dg.core.Dendrogenous(self.test_record,
-    #                                      mock_settings)
-
-    #    test_file = os.path.join(self.test_resources, 'test_mask.mask')
-
-    #    with mock.patch.object(test_class, 'masked_seqs', new_callable=mock.PropertyMock) as mock_attr:
-    #        mock_attr.return_value = test_file
-    #        mask_size = test_class._mask_check()
-
-    #    self.assertEqual(mask_size, 52)
-
-    def test_phylogeny_normal(self):
+    def test__mask_check(self):
         """
-        Ensure phylogeny code correctly runs and generates of phylogeny in the right place
+        ensure mask check returns correct sequence length for first seq in masked
+        fasta
         """
+
         mock_settings = mock.Mock(dg.settings.Settings)
         mock_settings.dir_paths = self.dir_paths
-        mock_settings.binary_paths = {'FastTree': os.path.join(self.binary_path, "FastTree")}
-
-        os.mkdir(self.dir_paths['mask'])
-        os.mkdir(self.dir_paths['tree'])
-
-        shutil.copy(os.path.join(self.test_resources, 'test_mask.mask'),
-                    os.path.join(self.dir_paths['mask'], 'test.mask'))
-
-        expected_file = os.path.join(self.dir_paths['tree'], 'test.tre')
         test_class = dg.core.Dendrogenous(self.test_record,
                                           mock_settings)
 
-        with mock.patch.object(test_class, 'mask', return_value=None) as mock_method:
-            test_class.estimate_phylogeny()
+        test_file = os.path.join(self.test_resources, 'test_mask.mask')
 
-        self.assertEqual(self.file_hash(expected_file),
-                         self.file_hash(os.path.join(self.test_resources, 'test_tree.tre')))
-        self.assertFalse(mock_method.called)
+        with mock.patch.object(test_class, 'masked_seqs', new_callabe=mock.PropertyMock) as mock_attr:
+            mock_attr..__get__ = mock.Mock(return_value=test_file)
+            mask_size = test_class._mask_check()
 
+        self.assertEqual(mask_size, 52)
 
-    def test_phylogeny_runs_mask_if_mask_is_missing(self):
-        """
-        Ensure phylogeny code correctly calls self.mask() if phylogeny is missing
-        """
-        mock_settings = mock.Mock(dg.settings.Settings)
-        mock_settings.dir_paths = self.dir_paths
-        mock_settings.binary_paths = {'FastTree': os.path.join(self.binary_path, "FastTree")}
-
-        os.mkdir(self.dir_paths['mask'])
-        os.mkdir(self.dir_paths['tree'])
-
-        test_class = dg.core.Dendrogenous(self.test_record,
-                                          mock_settings)
-
-        with mock.patch.object(test_class, 'mask', return_value=None) as mock_method:
-            test_class.estimate_phylogeny()
-
-        self.assertTrue(mock_method.called)
 
     def tearDown(self):
         if os.path.exists(self.test_dir):
             shutil.rmtree(self.test_dir)
 
+
+    #    pass
+    #    #self.fail()
+
+
+
+    #@classmethod
+    #def tearDownClass(cls):
+    #    """
+    #    Clean up the outputs generated during testing
+    #    """
+    #    if os.path.exists(cls.settings['output_dir']):
+    #        shutil.rmtree(cls.settings['output_dir'])
 
 if __name__ == '__main__':
     unittest.main()

@@ -72,7 +72,6 @@ class Dendrogenous():
         return reformatted_id
 
 
-
     def __execute_cmd(self, cmd, input_str=None):
         """
         Execute a command using subprocess using a string as stdin
@@ -152,7 +151,6 @@ class Dendrogenous():
 
         return hit_records
 
-
     def get_seqs(self):
         """
         Get similar sequences to seed by blasting genomes and parsing the output
@@ -204,19 +202,16 @@ class Dendrogenous():
         # check if mask is big enough
         mask_length = self._mask_check()
 
+        # if too few sites rerun with automated setting
         if mask_length < self.settings.minimums['min_sites']:
             remask_cmd = "{0} -in {1}" \
                          " -out {2} -automated1".format(trimal_path,
                                                         self.aligned_seqs,
                                                         self.masked_seqs)
             dg.utils.execute_cmd(remask_cmd)
+            mask_length = self._mask_check()
 
-            new_mask_length = self._mask_check()
-
-            ####this shouldn't be running
-            print(new_mask_length)
-            print(self.settings.minimums['min_sites'])
-            print(int(mask_length) < int(self.settings.minimums['min_sites']))
+            # if still too short move to fail pile
             if mask_length < self.settings.minimums['min_sites']:
                 self.settings.logger.warning("Too few sites hits after mask: {}".format(self.seq_name))
                 os.rename(self.masked_seqs,
@@ -228,29 +223,22 @@ class Dendrogenous():
         Returns the length of the mask in the mask file
         Designed for testing if the automated masking needs rerun with different settings
         """
+        print(self.masked_seqs)
         with open(self.masked_seqs, 'rU') as mask_fh:
             sample_seq = next(SeqIO.parse(mask_fh, "fasta"))
         return len(sample_seq.seq)
 
-    def phylogeny(self):
+
+    def estimate_phylogeny(self):
         '''Generate phylogeny from masked seqs using FastTree2'''
 
         if not os.path.exists(self.masked_seqs):
             self.mask()
 
-        fasttree_path = self.settings.binary_paths['fasttree']
+        fasttree_path = self.settings.binary_paths['FastTree']
         phylogeny_cmd = "{0} -bionj -slow"\
-                        " -quiet -out {2} {1}".format(fasttree_path,
-                                                      self.masked_seqs,
-                                                      self.phylogeny)
+                        " -quiet -out {1} {2}".format(fasttree_path,
+                                                      self.phylogeny,
+                                                      self.masked_seqs)
         dg.utils.execute_cmd(phylogeny_cmd)
-
-
-    #def name(self):
-    #    """
-
-    #    """
-    #    raise NotImplemented
-    #    #if not os.path.exists(PHYLOGENY):
-    #    #    self.phylogeny()
 

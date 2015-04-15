@@ -4,8 +4,10 @@ Settings class that parses user supplied settings.json or command line arguments
 """
 import os
 import json
+import logging
 import io
 import pymysql
+
 
 class Settings():
     """
@@ -22,30 +24,76 @@ class Settings():
         then add default args and export to class dict
         """
 
-        required_settings = ['genome_list', 'genome_dir', 'dbconfig']
+
+        required_settings = [('genome_list', list), ('genome_dir', str), ('dbconfig', dict)]
 
         parsed_settings = self.__parse_settings(settings_file)
 
-        user_input = self.__check_mandatory_fields(required_settings,
-                                                 parsed_settings)
+        user_input = self.__check_mandatory_fields(parsed_settings, required_settings)
 
-        default_settings = (('output_dir', 'out'),
-                            ('minimums', {'min_seqs': 3,
-                                          'min_sites': 29}),
-                            ('blast_settings', {'num_seqs': 1,
-                                                'evalue': 1e-5})
-                            ('binary_paths', {'blastp': 'blastp',
-                                              'kalign': 'kalign',
-                                              'trimal': 'trimal',
-                                              'FastTree': 'FastTree'}),
-                            ('log_level', 2))
+        default_binary_dir = os.path.abspath(os.path.join('dendrogenous',
+                                                          'dependencies'))
+        default_settings = [('output_dir', 'out'),
+                            ['minimums', {'min_seqs': 3,
+                                          'min_sites': 29}],
+                            ['blast_settings', {'num_seqs': 1,
+                                                'evalue': 1e-5}],
+                            ['binary_paths', {'blastp':   os.path.join(default_binary_dir,
+                                                                       'blastp'),
+                                              'kalign':   os.path.join(default_binary_dir,
+                                                                       'kalign'),
+                                              'trimal':   os.path.join(default_binary_dir,
+                                                                       'trimal'),
+                                              'FastTree': os.path.join(default_binary_dir,
+                                                                       'FastTree')}]]
 
-        self.full_settings = {}
-        for field, setting in default_settings:
-            self.full_settings[field] = user_input.get(field, setting)
+        self.full_settings = self.__collate_default_and_user_settings(default_settings,
+                                                                      user_input,
+                                                                      required_settings)
 
-        self.logger = __get_logger()
+        # needs a directory structure to place the logfile
+        self.__create_directory_structure()
+        self.logger = self.__get_logger()
 
+    def __collate_default_and_user_settings(self, default_settings, user_input, required_settings):
+        """
+        Combine user defined settings with defaults overriding the default where
+        appropriate.
+        Raises a typeerror if the user defined type doesn't match the default type
+        """
+        # iterate over default settings populating full_settings
+        # with the appropriate user defined setting if it exists or
+        # the default value if not
+        full_settings = {}
+        for field, def_setting in default_settings:
+            user_val_or_default = user_input.get(field, def_setting)
+            if type(user_val_or_default) != type(def_setting):
+                raise TypeError("{0} is incorrectly specified in settings.json should be {1}".format(field, type(def_setting)))
+            else:
+                full_settings.update({field: user_val_or_default})
+
+        # add default fields from user input to full_settings
+        for field, _ in required_settings:
+            full_settings.update({field: user_input[field]})
+
+        # make sure all user defined fields are real settings
+        for user_field in user_input.keys():
+            if user_field not in full_settings.keys():
+                raise ValueError("{} setting specified in settings.json does not exist.".format(user_field))
+        return full_settings
+
+
+
+
+
+    def __create_directory_structure(self):
+        """
+        Generate the required output directory structure in the output_dir
+        """
+        for folder in self.dir_paths.values():
+            if not os.path.exists(folder):
+                # exist_ok=True gives mkdir -p type function
+                os.makedirs(folder, exist_ok=True)
 
     def __get_logger(self):
         """
@@ -53,8 +101,8 @@ class Settings():
         """
         logger = logging.getLogger("dg_log")
         logger.setLevel(logging.DEBUG)
-        fh = logging.FileHandler(os.path.join(self.output_dir,
-                                                "run_data", "run.log"))
+        fh = logging.FileHandler(os.path.join(self.dir_paths['run_data'],
+                                              "run.log"))
         fh.setLevel(logging.DEBUG)
         ch = logging.StreamHandler()
         ch.setLevel(logging.ERROR)
@@ -82,13 +130,17 @@ class Settings():
         return settings
 
 
-    def __check_mandatory_fields(self, required_settings, parsed_user_input):
+    def __check_mandatory_fields(self, parsed_user_input, required_settings):
         """
         Ensure mandatory fields have been provided
         """
-        for entry in required_settings:
+        for entry, value_type in required_settings:
             if entry not in parsed_user_input:
                 raise ValueError("{} must be defined in settings.json".format(entry))
+            elif type(parsed_user_input[entry]) is not value_type:
+                raise TypeError("{0} is incorrectly specified in settings.json should be {1}".format(entry, value_type))
+
+        return parsed_user_input
 
     @property
     def genomes(self):
@@ -97,23 +149,21 @@ class Settings():
         """
         genome_list = self.full_settings['genome_list']
         genome_dir = os.path.abspath(self.full_settings['genome_dir'])
-        if not os.path.exists(genome_list):
-            raise ValueError("{} genome list file does not exist".format(genome_list))
-
-        if not os.path.exists(self.full-settings['genome_dir']):
+        if not os.path.exists(self.full_settings['genome_dir']):
             raise ValueError("{} genome dir path does not exist".format(genome_list))
 
-        with open(genome_list, 'r') as gl_fh:
-            genomes = [os.path.join(genome_dir, genome.strip()) for genome in gl_fh.readlines()]
+        genome_paths = [os.path.join(genome_dir, genome_name) for genome_name in genome_list]
 
-        for genome in genomes:
+        genomes = []
+        for genome in genome_paths:
             phr = os.path.exists(genome + '.phr')
             pin = os.path.exists(genome + '.pin')
             psq = os.path.exists(genome + '.psq')
-            index = os.path.exists(genome + '.index')
 
-            if not(phr and pin and psq and index):
+            if not(phr and pin and psq):
                 raise ValueError("{} genome blastdb files do not exist".format(genome))
+            else:
+                genomes.append(genome)
 
         return genomes
 
@@ -149,23 +199,23 @@ class Settings():
         """
         Returns dict of dbconfigs
         """
-        self.__test_db_connection(self.full_settings['db_config'])
-        return self.full_settings['db_config']
+        self.__test_db_connection(self.full_settings['dbconfig'])
+        return self.full_settings['dbconfig']
 
     def __test_db_connection(self, db_config):
         """
         Test it is possible to connect to db
         """
+
         try:
-            config = self.settings['db_config']
-            con = pymysql.connect(**config)
-            cursor = conn.cursor()
+            con = pymysql.connect(**db_config)
+            cursor = con.cursor()
             cursor.execute("SELECT VERSION()")
             results = cursor.fetchone()
             if not results:
-                raise ValueError("Can't read mysql version in db: {}".format(config))
+                raise ValueError("Can't read mysql version in db: {}".format(db_config))
         except:
-            raise ValueError("Can't connect to mysql db: {}".format(config))
+            raise ValueError("Can't connect to mysql db: {}".format(db_config))
 
     @property
     def blast_settings(self):
@@ -176,10 +226,16 @@ class Settings():
         return self.full_settings['blast_settings']
 
     @property
+    def binary_paths(self):
+        """
+        Returns binary path dict
+        """
+        return self.full_settings['binary_paths']
+
+    @property
     def minimums(self):
         """
         Returns minimums - a dict containing minimum number of sequences to align
         and minimum number of sites to build a tree from
         """
         return self.full_settings['minimums']
-

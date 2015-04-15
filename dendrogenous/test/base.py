@@ -51,12 +51,6 @@ class BaseTestCase(unittest.TestCase):
                           if len(x) > 0]
         return stdout_list
 
-    def assertFileSame(self, file1, file2):
-        """
-        Assert two files have the same hash
-        """
-        self.assertEqual(self.file_hash(file1), self.file_hash(file2))
-
     def file_hash(self, file_name):
         """
         Calculate md5sum of a given file
@@ -65,8 +59,6 @@ class BaseTestCase(unittest.TestCase):
         with open(file_name, 'rb') as fh:
             buf = fh.read()
             hasher.update(buf)
-            print(hasher.hexdigest())
-            return hasher.hexdigest()
             return hasher.hexdigest()
 
 
