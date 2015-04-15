@@ -36,10 +36,3 @@ def execute_cmd(cmd, input_str=None, output_str=False, debug=False):
 
     return None
 
-def create_directory_structure(dir_structure):
-    """
-    Generate the required output directory structure in the output_dir
-    """
-    for folder in dir_structure.values():
-        if not os.path.exists(folder):
-            os.mkdir(folder)
