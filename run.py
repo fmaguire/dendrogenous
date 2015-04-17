@@ -15,7 +15,7 @@ def main(settings_file):
 
     seqs_needing_run = dg.utils.check_already_run(settings, input_seqs)
 
-    processes = [multiprocessing.Process(target=build_phylogeny, args=(seq, settings)) for seq in input_seqs]
+    processes = [multiprocessing.Process(target=build_phylogeny, args=(seq, settings)) for seq in seqs_needing_run]
 
     for p in processes:
         p.start()

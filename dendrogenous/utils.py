@@ -7,8 +7,6 @@ from Bio import SeqIO
 import glob
 import collections
 
-
-
 def execute_cmd(cmd, input_str=None, output_str=False, debug=False):
     """
     Execute a command using subprocess using a string as stdin
@@ -58,16 +56,16 @@ def reformat_accession(seq_record):
     else:
         short_id = seq_record.id
 
-    seq_record.id = re.sub('[|,/,\,.]', '_', short_id)
+    seq_record.id = re.sub('[|,/,\,.,:,\,),(]', '_', short_id)
     return seq_record
 
 def check_already_run(settings, input_seqs):
     """
     Check final output folder and 2 expected fail state folders
     """
-    named_phylogenies = glob.glob(os.path.join(settings.dir_paths["named"], '.named_tre'))
-    failed_masks      = glob.glob(os.path.join(settings.dir_paths["mask_fail"], '.mask_too_short'))
-    failed_blasts     = glob.glob(os.path.join(settings.dir_paths["blast_fail"], '.insufficient_hits'))
+    named_phylogenies = glob.glob(os.path.join(settings.dir_paths["named"], '*.named_tre'))
+    failed_masks      = glob.glob(os.path.join(settings.dir_paths["mask_fail"], '*.mask_too_short'))
+    failed_blasts     = glob.glob(os.path.join(settings.dir_paths["blast_fail"], '*.insufficient_hits'))
     # get rid of file extensions
     remove_extra_path = lambda filename: os.path.basename(os.path.splitext(filename)[0])
 
@@ -91,9 +89,13 @@ def check_already_run(settings, input_seqs):
     input_seq_ids = set([seq.id for seq in input_seqs])
 
     # therefore seqs need run is the assymetric set difference
-    seqs_needing_run = input_seq_ids - run_seqs
+    ids_needing_run = input_seq_ids - run_seqs
+
+    # create list of seqs needing run from this
+    seqs_needing_run = [seq for seq in input_seqs if seq.id in ids_needing_run]
 
     return seqs_needing_run
+
 
 class PipeError(Exception):
     """
