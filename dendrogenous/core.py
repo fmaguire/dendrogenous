@@ -8,6 +8,7 @@ import io
 import re
 import pymysql
 import subprocess
+from Bio import Phylo
 from Bio import SeqIO
 from Bio.Blast import NCBIXML
 from Bio.Seq import Seq
@@ -36,7 +37,7 @@ class Dendrogenous():
 
     def __init__(self, seq_record, settings):
         """
-        Initialise the class and truncate the accession to 20-chars
+        Initialise the class
         """
         if not isinstance(settings, SettingsClass):
             raise ValueError("Supplied settings is not Settings class")
@@ -45,7 +46,7 @@ class Dendrogenous():
             raise ValueError("Supplied sequence is not SeqRecord class")
 
         self.settings = settings
-        self.seq_name = self._reformat_accession(seq_record)
+        self.seq_name = seq_record.id
 
         self.seed = ">{0}\n{1}".format(self.seq_name,
                                        seq_record.seq)
@@ -56,45 +57,56 @@ class Dendrogenous():
         self.aligned_seqs = os.path.join(self.settings.dir_paths['alignment'], self.seq_name + ".afa")
         self.masked_seqs = os.path.join(self.settings.dir_paths['mask'], self.seq_name + ".mask")
         self.phylogeny = os.path.join(self.settings.dir_paths['tree'], self.seq_name + ".tre")
+        self.named_phylogeny = os.path.join(self.settings.dir_paths['named'], self.seq_name + ".named_tre")
 
-    @staticmethod
-    def _reformat_accession(seq_record):
+    def _dependency(self, dependency_file, dependency_method):
         """
-        Reformat accessions to be <=20 chars long and not contain any special chars
+        Check dependency file exists and if it doesn't run the
+        method that generates it
         """
+        if not os.path.exists(dependency_file):
+            dependency_method()
 
-        if len(seq_record.id) > 20:
-            short_id = seq_record.id[:20]
+    def _check_output(self, expected_file):
+        """
+        Check the specified expected file
+        has been created and is not empty
+        raising a PipeError if it has not
+        """
+        if not os.path.exists(expected_file):
+            raise dg.utils.PipeError("Expected file does not exist: {}".format(expected_file))
         else:
-            short_id = seq_record.id
+            if not os.path.getsize(expected_file) > 0:
+                maformed_file = os.path.join(self.settings.dir_paths['ERROR'], os.path.basename(expected_file))
+                os.rename(expected_file, malformed_file)
+                raise dg.utils.PipeError("Expected file is empty: {}".format(expected_file))
 
-        reformatted_id = re.sub('[|,/,\,.]', '_', short_id)
-        return reformatted_id
-
-
-    def __execute_cmd(self, cmd, input_str=None):
+    def _mask_check(self):
         """
-        Execute a command using subprocess using a string as stdin
-        and returns the stdout as a string if an input_str is provided
-        Otherwise just executes cmd normally
+        Returns the length of the mask in the mask file
+        Designed for testing if the automated masking needs rerun with different settings
         """
-        if input_str:
-            osnull = open(os.devnull, 'w')
-            proc = subprocess.Popen(cmd,
-                                    shell=True,
-                                    stdin=subprocess.PIPE,
-                                    stdout=subprocess.PIPE,
-                                    stderr=osnull)
-            (stdout, stderr) = proc.communicate(input_str.encode())
-            osnull.close()
+        with open(self.masked_seqs, 'rU') as mask_fh:
+            sample_seq = next(SeqIO.parse(mask_fh, "fasta"))
+        return len(sample_seq.seq)
 
+    def _get_species_name(self, leaf, db_cursor):
+        """
+        Query the open database to convert a leaf name (a protein_ID) to
+        the appropriate species name.
+        """
+        query = "SELECT species FROM cider WHERE protein_ID='{}'".format(leaf)
+        db_cursor.execute(query)
+        returned_taxa_name = db_cursor.fetchone()
+        if returned_taxa_name is None:
+            taxa_name = 'UNKNOWN TAXA [{}]'.format(leaf)
+            self.settings.logger.warning("Protein ID lacks species information: {}".format(leaf))
         else:
-            proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-            (stdout, stderr) = proc.communicate()
-
-        return stdout.decode()
-
-
+            taxa_name = "{0} [{1}]".format(returned_taxa_name[0],
+                                           leaf)
+        if leaf == self.seq_name:
+            taxa_name = "SEED SEQUENCE [{}]".format(leaf)
+        return taxa_name
     def _blast(self, genome):
         """
         Blast seed sequence against db using BLASTP
@@ -112,7 +124,6 @@ class Dendrogenous():
         blast_output = dg.utils.execute_cmd(blast_cmd, input_str=self.seed, output_str=True)
 
         return blast_output
-
 
     def _parse_blast(self, blast_output):
         """
@@ -141,15 +152,15 @@ class Dendrogenous():
                         "WHERE protein_ID='{0}'".format(hit_id))
             sequence = cur.fetchone()
             if sequence is None:
-                self.settings.logger.error("blast hit protein_ID not in db: {}".format(str(hit_id)))
+                self.settings.logger.warning("Blast hit protein_ID not in db: {}".format(hit_id))
                 continue
 
             sequence_record = SeqRecord(\
                 Seq(sequence[0], IUPAC.protein), id=hit_id, description='')
             hit_records.append(sequence_record)
         con.close()
-
         return hit_records
+
 
     def get_seqs(self):
         """
@@ -163,26 +174,25 @@ class Dendrogenous():
             with open(self.seq_hits, 'a') as out_fh:
                 SeqIO.write(blast_hits, out_fh, 'fasta')
 
+        self._check_output(self.seq_hits)
         if num_hits < self.settings.minimums['min_seqs']:
-            os.rename(self.seq_hits,
-                      os.path.join(self.settings.dir_paths['blast_fail'], self.seq_name + ".insufficient_hits"))
-            self.settings.logger.warning("Too few blastp hits for alignment: {}".format(self.seq_name))
-            return False
+            seq_fail_file = os.path.join(self.settings.dir_paths['blast_fail'], self.seq_name + ".insufficient_hits")
+            os.rename(self.seq_hits, seq_fail_file)
+            self._check_output(seq_fail_file)
+            raise dg.utils.GetSeqFail()
 
     def align(self):
         """
         Align input seqs using kalign
         """
-        if not os.path.exists(self.seq_hits):
-            status = self.get_seqs()
-            if status is not None:
-                return False
+        self._dependency(self.seq_hits, self.get_seqs)
 
         kalign_path = self.settings.binary_paths['kalign']
         align_cmd = "{0} -i {1} -o {2}".format(kalign_path,
                                                self.seq_hits,
                                                self.aligned_seqs)
         dg.utils.execute_cmd(align_cmd)
+        self._check_output(self.aligned_seqs)
 
     def mask(self):
         '''
@@ -190,17 +200,12 @@ class Dendrogenous():
         Method reruns trimal with automated setting if mask is too short
         If mask is still too short it is moved to fail directory
         '''
-
-        if not os.path.exists(self.aligned_seqs):
-            status = self.align()
-            if status is not None:
-                return False
+        self._dependency(self.aligned_seqs, self.align)
 
         trimal_path = self.settings.binary_paths['trimal']
         mask_cmd = "{0} -in {1} -out {2} -nogaps".format(trimal_path,
                                                          self.aligned_seqs,
                                                          self.masked_seqs)
-
         dg.utils.execute_cmd(mask_cmd, debug=True)
 
         # check if mask is big enough
@@ -217,30 +222,22 @@ class Dendrogenous():
 
             # if still too short move to fail pile
             if mask_length < self.settings.minimums['min_sites']:
-                self.settings.logger.warning("Too few sites hits after mask: {}".format(self.seq_name))
-                os.rename(self.masked_seqs,
-                          os.path.join(self.settings.dir_paths['mask_fail'],
-                                       self.seq_name + ".mask_too_short"))
-                # status is False as this failed
-                return False
+                mask_fail_file = os.path.join(self.settings.dir_paths['mask_fail'],
+                                              self.seq_name + ".mask_too_short")
 
-    def _mask_check(self):
-        """
-        Returns the length of the mask in the mask file
-        Designed for testing if the automated masking needs rerun with different settings
-        """
-        with open(self.masked_seqs, 'rU') as mask_fh:
-            sample_seq = next(SeqIO.parse(mask_fh, "fasta"))
-        return len(sample_seq.seq)
+                os.rename(self.masked_seqs, mask_fail_file)
+                # status is False if the mask fails
+                self._check_output(mask_fail_file)
+                raise dg.utils.MaskFail()
+            else:
+                self._check_output(self.masked_seqs)
+        else:
+            self._check_output(self.masked_seqs)
 
 
     def estimate_phylogeny(self):
         '''Generate phylogeny from masked seqs using FastTree2'''
-
-        if not os.path.exists(self.masked_seqs):
-            status = self.mask()
-            if status is not None:
-                return False
+        self._dependency(self.masked_seqs, self.mask)
 
         fasttree_path = self.settings.binary_paths['FastTree']
         phylogeny_cmd = "{0} -bionj -slow"\
@@ -248,4 +245,53 @@ class Dendrogenous():
                                                       self.phylogeny,
                                                       self.masked_seqs)
         dg.utils.execute_cmd(phylogeny_cmd)
+        self._check_output(self.phylogeny)
+
+    def name_phylogeny(self):
+        """
+        Name sequences on a phylogeny
+        """
+        self._dependency(self.phylogeny, self.estimate_phylogeny)
+
+        # parse tree using biopython parser
+        parsed_tree = Phylo.read(self.phylogeny, 'newick')
+
+        # generate tree_name dict using database
+        con = pymysql.connect(**self.settings.dbconfig)
+        cur = con.cursor()
+        tree_rename_dict = {re.escape(leaf.name): self._get_species_name(leaf.name, cur) \
+                                for leaf in parsed_tree.get_terminals()}
+        con.close()
+
+        # read tree in as text for easy search replace
+        # this could maybe be done more elegantly using the already
+        # ETE parsed tree object
+        with open(self.phylogeny, 'r') as phy_fh:
+            tree_text = phy_fh.read()
+
+        patterns = re.compile("|".join(tree_rename_dict.keys()))
+
+        renaming = lambda m: tree_rename_dict[re.escape(m.group(0))]
+        renamed_tree = patterns.sub(renaming, tree_text)
+
+        with open(self.named_phylogeny, 'w') as named_phy_fh:
+            named_phy_fh.write(renamed_tree)
+
+        self._check_output(self.named_phylogeny)
+
+
+    def build_named_phylogeny(self):
+        """
+        Runner method for class
+        """
+        try:
+            self.name_phylogeny()
+        except dg.utils.GetSeqFail:
+            self.settings.logger.warning("SeqFail: {} | too few blastp hits for alignment".format(self.seq_name))
+        except dg.utils.MaskFail:
+            self.settings.logger.warning("MaskFail: {} | too few sites hits after mask".format(self.seq_name))
+        except dg.utils.PipeError as E:
+            self.settings.logger.error("!!Error in phylogeny generation for {0}: {1}".format(self.seq_name, E.msg))
+        finally:
+            return
 

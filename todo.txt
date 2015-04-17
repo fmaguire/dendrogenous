@@ -1,0 +1,5 @@
+Todo
+====
+
+add json format checker
+get better tree parser than BioPython as that reads only final whitespace delimited label

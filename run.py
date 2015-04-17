@@ -13,7 +13,7 @@ def main(settings_file):
 
     input_seqs       = dg.utils.parse_seqs(settings.input_seqs)
 
-    #seqs_needing_run = dg.utils.check_already_run(settings, input_seqs)
+    seqs_needing_run = dg.utils.check_already_run(settings, input_seqs)
 
     processes = [multiprocessing.Process(target=build_phylogeny, args=(seq, settings)) for seq in input_seqs]
 
@@ -23,10 +23,9 @@ def main(settings_file):
     for p in processes:
         p.join()
 
-
 def build_phylogeny(seq, settings):
     seq_job = dg.core.Dendrogenous(seq, settings)
-    seq_job.estimate_phylogeny()
+    seq_job.build_named_phylogeny()
 
 if __name__=='__main__':
     main(sys.argv[1])

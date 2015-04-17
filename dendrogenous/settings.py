@@ -25,7 +25,10 @@ class Settings():
         """
 
 
-        required_settings = [('input_seqs', str), ('genome_list', list), ('genome_dir', str), ('dbconfig', dict)]
+        required_settings = [('input_seqs', str),
+                             ('genome_list', list),
+                             ('genome_dir', str),
+                             ('dbconfig', dict)]
 
         parsed_settings = self.__parse_settings(settings_file)
 
@@ -33,7 +36,8 @@ class Settings():
 
         default_binary_dir = os.path.abspath(os.path.join('dendrogenous',
                                                           'dependencies'))
-        default_settings = [('output_dir', 'out'),
+        default_settings = [('cores', 1),
+                            ('output_dir', 'out'),
                             ['minimums', {'min_seqs': 3,
                                           'min_sites': 29}],
                             ['blast_settings', {'num_seqs': 1,
@@ -197,15 +201,15 @@ class Settings():
         """
         Returns the directory paths for all output
         """
-        dir_paths = {"run_data": "1,run_data",
-                     "input_seqs": "1.run_data",
+        dir_paths = {"run_data": "0.run_data",
+                     "ERROR": "ERROR",
                      "blast_hits": "1.blast_hits",
                      "blast_fail": os.path.join("1.blast_hits", "insufficient_hits"),
                      "alignment": "2.alignment",
                      "mask": "3.mask",
                      "mask_fail": os.path.join("3.mask", "insufficient_sites"),
                      "tree": "4.phylogeny",
-                     "name": "5.name"}
+                     "named": "5.name"}
 
         for key in dir_paths.keys():
            dir_paths[key] = os.path.join(self.output_dir, dir_paths[key])

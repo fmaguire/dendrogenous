@@ -17,6 +17,7 @@ import time
 from socket import gethostname
 
 from Bio import SeqIO
+from Bio import Phylo
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio.Alphabet import IUPAC
@@ -33,25 +34,22 @@ class TestCoreInit(BaseTestCase):
         self.test_record = SeqRecord(\
                    Seq("MKQHKAMIVALIVICITAVVAALVTRKDLCEVHIRTGQTEGGEEEEVAVF",
                    IUPAC.protein),
-                   id="YP_025292.1", name="HokC",
+                   id="YP_025292_1", name="HokC",
                    description="toxic membrane protein, small")
 
-        dir_paths = {"run_data": "run_data",
-                     "input_seqs": "0.sequences",
+        dir_paths = {"run_data": "0.run_data",
                      "blast_hits": "1.blast_hits",
                      "blast_fail": os.path.join("1.blast_hits", "insufficient_hits"),
                      "alignment": "2.alignment",
                      "mask": "3.mask",
                      "mask_fail": os.path.join("3.mask", "insufficient_sites"),
                      "tree": "4.phylogeny",
-                     "name": "5.name"}
+                     "named": "5.name"}
 
         for key in dir_paths.keys():
             dir_paths[key] = os.path.join('testdir', dir_paths[key])
 
         self.dir_paths = dir_paths
-
-
 
     def init_core():
         mock_settings = mock.Mock(dg.settings.Settings)
@@ -77,6 +75,14 @@ class TestCoreInit(BaseTestCase):
         self.assertEqual(test_class.seq_name, expected_name)
         self.assertEqual(test_class.settings.dir_paths, self.dir_paths)
 
+        self.assertEqual(test_class.aligned_seqs, os.path.join(self.dir_paths['alignment'],
+                                                               expected_name + ".afa"))
+        self.assertEqual(test_class.masked_seqs, os.path.join(self.dir_paths['mask'],
+                                                              expected_name + ".mask"))
+        self.assertEqual(test_class.phylogeny, os.path.join(self.dir_paths['tree'],
+                                                           expected_name + ".tre"))
+        self.assertEqual(test_class.named_phylogeny, os.path.join(self.dir_paths['named'],
+                                                                  expected_name + ".named_tre"))
 
     def test_init_bad_seqrecord(self):
         """
@@ -100,37 +106,6 @@ class TestCoreInit(BaseTestCase):
             dg.core.Dendrogenous(self.test_record,
                                  invalid_settings)
 
-    def test_reformat_accession_method_for_too_long_accessions(self):
-        """
-        Test reformat accession works as expected
-        """
-        too_long = SeqRecord(\
-                   Seq("X",
-                   IUPAC.protein),
-                   id="012345678901234567890123456789",
-                   name="foo",
-                   description="bar, baz")
-
-        truncated = dg.core.Dendrogenous._reformat_accession(too_long)
-
-        self.assertEqual(len(truncated), 20)
-        self.assertEqual(truncated, "01234567890123456789")
-
-    def test_reformat_accession_method_for_problematic_characters(self):
-        """
-        Test reformat accession works as expected
-        """
-        bad_char = SeqRecord(\
-                   Seq("X",
-                   IUPAC.protein),
-                   id="|blah|t",
-                   name="foo",
-                   description="bar, baz")
-
-        fixed_chars = dg.core.Dendrogenous._reformat_accession(bad_char)
-        self.assertEqual(fixed_chars, "_blah_t")
-
-
 class TestCoreGetSeqs(BaseTestCase):
     """
     Test the components of the get_seqs method and the _blast and _parse
@@ -143,24 +118,22 @@ class TestCoreGetSeqs(BaseTestCase):
         self.test_record = SeqRecord(\
                    Seq("MKQHKAMIVALIVICITAVVAALVTRKDLCEVHIRTGQTEGGEEEEVAVF",
                    IUPAC.protein),
-                   id="YP_025292.1", name="HokC",
+                   id="YP_025292_1", name="HokC",
                    description="toxic membrane protein, small")
 
-        dir_paths = {"run_data": "run_data",
-                     "input_seqs": "0.sequences",
+        dir_paths = {"run_data": "0.run_data",
                      "blast_hits": "1.blast_hits",
                      "blast_fail": os.path.join("1.blast_hits", "insufficient_hits"),
                      "alignment": "2.alignment",
                      "mask": "3.mask",
                      "mask_fail": os.path.join("3.mask", "insufficient_sites"),
                      "tree": "4.phylogeny",
-                     "name": "5.name"}
+                     "named": "5.name"}
 
         for key in dir_paths.keys():
             dir_paths[key] = os.path.join('testdir', dir_paths[key])
 
         self.dir_paths = dir_paths
-
 
 
     def test__blast_runs(self):
@@ -311,8 +284,8 @@ class TestCoreGetSeqs(BaseTestCase):
         test_class = dg.core.Dendrogenous(self.test_record,
                                           mock_settings)
 
-
-        test_class.get_seqs()
+        with self.assertRaises(dg.utils.GetSeqFail):
+            test_class.get_seqs()
 
         expected_output_file = os.path.join(self.dir_paths['blast_fail'], 'YP_025292_1.insufficient_hits')
         self.assertTrue(os.path.exists(expected_output_file))
@@ -338,15 +311,14 @@ class TestPhylogenyPipe(BaseTestCase):
                    id="test")
         self.test_dir = 'testdir2'
 
-        dir_paths = {"run_data": "run_data",
-                     "input_seqs": "0.sequences",
+        dir_paths = {"run_data": "0.run_data",
                      "blast_hits": "1.blast_hits",
                      "blast_fail": os.path.join("1.blast_hits", "insufficient_hits"),
                      "alignment": "2.alignment",
                      "mask": "3.mask",
                      "mask_fail": os.path.join("3.mask", "insufficient_sites"),
                      "tree": "4.phylogeny",
-                     "name": "5.name"}
+                     "named": "5.name"}
 
         for key in dir_paths.keys():
             dir_paths[key] = os.path.join(self.test_dir, dir_paths[key])
@@ -392,10 +364,14 @@ class TestPhylogenyPipe(BaseTestCase):
         test_class = dg.core.Dendrogenous(self.test_record,
                                           mock_settings)
 
+        # patching out get_seqs so this doesn't run and the output check function as this will
+        # also fail due to get_seqs not actually running and thus outputting anything
         with mock.patch.object(test_class, 'get_seqs', return_value=None) as mock_method:
-            test_class.align()
+            with mock.patch.object(test_class, '_check_output', return_value=None) as mock_check:
+                test_class.align()
 
         self.assertTrue(mock_method.called)
+        self.assertTrue(mock_check.called)
 
     def test_mask_normal(self):
         """
@@ -475,7 +451,8 @@ class TestPhylogenyPipe(BaseTestCase):
         test_class = dg.core.Dendrogenous(self.test_record,
                                           mock_settings)
 
-        test_class.mask()
+        with self.assertRaises(dg.utils.MaskFail):
+            test_class.mask()
 
         not_expected_file = os.path.join(self.dir_paths['mask'], 'test.mask')
         expected_file = os.path.join(self.dir_paths['mask_fail'], 'test.mask_too_short')
@@ -569,9 +546,48 @@ class TestPhylogenyPipe(BaseTestCase):
                                           mock_settings)
 
         with mock.patch.object(test_class, 'mask', return_value=None) as mock_method:
-            test_class.estimate_phylogeny()
+            with mock.patch.object(test_class, '_check_output', return_value=None) as mock_check:
+                test_class.estimate_phylogeny()
 
         self.assertTrue(mock_method.called)
+        self.assertTrue(mock_check.called)
+
+
+    @pytest.mark.skipif("gethostname() != 'zorya'")
+    def test_phylogeny_rename(self):
+        """
+        Ensure phylogeny rename works as expected
+        """
+        mock_settings = mock.Mock(dg.settings.Settings)
+        mock_settings.dir_paths = self.dir_paths
+        mock_settings.logger = logging.getLogger("test")
+        with open(os.path.join(self.test_resources, 'secret.pickle'), 'rb') as secret:
+            mock_settings.dbconfig = pickle.load(secret)
+
+        os.mkdir(self.dir_paths['tree'])
+        os.mkdir(self.dir_paths['named'])
+
+        shutil.copy(os.path.join(self.test_resources, 'name_test.tre'),
+                    os.path.join(self.dir_paths['tree'], 'test.tre'))
+
+        test_class = dg.core.Dendrogenous(self.test_record,
+                                          mock_settings)
+
+        expected_file = os.path.join(self.dir_paths['named'], 'test.named_tre')
+        with mock.patch.object(test_class, 'estimate_phylogeny', return_value=None) as mock_method:
+            test_class.name_phylogeny()
+
+        self.assertFalse(mock_method.called)
+        self.assertTrue(os.path.exists(expected_file))
+
+        output_tree = Phylo.read(expected_file, 'newick')
+        # this parser sucks it only returns the last whitespace separated label
+        terminal_labels = [leaf.name for leaf in output_tree.get_terminals()]
+
+        self.assertEqual(len(terminal_labels), 10)
+        self.assertIn("TAXA", terminal_labels)
+        self.assertIn("SEQUENCE", terminal_labels)
+
 
     def tearDown(self):
         if os.path.exists(self.test_dir):
