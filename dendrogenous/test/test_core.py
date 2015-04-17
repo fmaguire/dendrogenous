@@ -193,7 +193,7 @@ class TestCoreGetSeqs(BaseTestCase):
         mock_settings.dir_paths = self.dir_paths
 
         with open(os.path.join(self.test_resources, 'secret.pickle'), 'rb') as secret:
-            mock_settings.db_config = pickle.load(secret)
+            mock_settings.dbconfig = pickle.load(secret)
 
         test_class = dg.core.Dendrogenous(self.test_record,
                                           mock_settings)
@@ -221,7 +221,7 @@ class TestCoreGetSeqs(BaseTestCase):
         mock_settings.logger = logging.getLogger("test")
 
         with open(os.path.join(self.test_resources, 'secret.pickle'), 'rb') as secret:
-            mock_settings.db_config = pickle.load(secret)
+            mock_settings.dbconfig = pickle.load(secret)
 
         test_class = dg.core.Dendrogenous(self.test_record,
                                           mock_settings)
@@ -263,7 +263,7 @@ class TestCoreGetSeqs(BaseTestCase):
 
         # load db settings from secret pickle file
         with open(os.path.join(self.test_resources, 'secret.pickle'), 'rb') as secret:
-            mock_settings.db_config = pickle.load(secret)
+            mock_settings.dbconfig = pickle.load(secret)
 
         test_class = dg.core.Dendrogenous(self.test_record,
                                           mock_settings)
@@ -306,7 +306,7 @@ class TestCoreGetSeqs(BaseTestCase):
 
         # load db settings from secret pickle file
         with open(os.path.join(self.test_resources, 'secret.pickle'), 'rb') as secret:
-            mock_settings.db_config = pickle.load(secret)
+            mock_settings.dbconfig = pickle.load(secret)
 
         test_class = dg.core.Dendrogenous(self.test_record,
                                           mock_settings)

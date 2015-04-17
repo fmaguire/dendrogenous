@@ -122,7 +122,7 @@ class Dendrogenous():
 
         # no get with default vals as this is a mandatory part of the
         # settings.json - use them to connect to mysql server
-        con = pymysql.connect(**self.settings.db_config)
+        con = pymysql.connect(**self.settings.dbconfig)
         cur = con.cursor()
 
         # Parse the xml output returns an iterator of blast record
@@ -167,14 +167,16 @@ class Dendrogenous():
             os.rename(self.seq_hits,
                       os.path.join(self.settings.dir_paths['blast_fail'], self.seq_name + ".insufficient_hits"))
             self.settings.logger.warning("Too few blastp hits for alignment: {}".format(self.seq_name))
+            return False
 
     def align(self):
         """
         Align input seqs using kalign
         """
         if not os.path.exists(self.seq_hits):
-            self.get_seqs()
-
+            status = self.get_seqs()
+            if status is not None:
+                return False
 
         kalign_path = self.settings.binary_paths['kalign']
         align_cmd = "{0} -i {1} -o {2}".format(kalign_path,
@@ -190,7 +192,9 @@ class Dendrogenous():
         '''
 
         if not os.path.exists(self.aligned_seqs):
-            self.align()
+            status = self.align()
+            if status is not None:
+                return False
 
         trimal_path = self.settings.binary_paths['trimal']
         mask_cmd = "{0} -in {1} -out {2} -nogaps".format(trimal_path,
@@ -217,13 +221,14 @@ class Dendrogenous():
                 os.rename(self.masked_seqs,
                           os.path.join(self.settings.dir_paths['mask_fail'],
                                        self.seq_name + ".mask_too_short"))
+                # status is False as this failed
+                return False
 
     def _mask_check(self):
         """
         Returns the length of the mask in the mask file
         Designed for testing if the automated masking needs rerun with different settings
         """
-        print(self.masked_seqs)
         with open(self.masked_seqs, 'rU') as mask_fh:
             sample_seq = next(SeqIO.parse(mask_fh, "fasta"))
         return len(sample_seq.seq)
@@ -233,7 +238,9 @@ class Dendrogenous():
         '''Generate phylogeny from masked seqs using FastTree2'''
 
         if not os.path.exists(self.masked_seqs):
-            self.mask()
+            status = self.mask()
+            if status is not None:
+                return False
 
         fasttree_path = self.settings.binary_paths['FastTree']
         phylogeny_cmd = "{0} -bionj -slow"\

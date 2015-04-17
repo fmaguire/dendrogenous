@@ -2,6 +2,7 @@
 
 import os
 import subprocess
+from Bio import SeqIO
 
 
 def execute_cmd(cmd, input_str=None, output_str=False, debug=False):
@@ -35,4 +36,13 @@ def execute_cmd(cmd, input_str=None, output_str=False, debug=False):
                              stdout=null, stderr=null)
 
     return None
+
+def parse_seqs(sequence_file):
+    with open(sequence_file, 'rU') as seq_fh:
+        sequences = [seq for seq in SeqIO.parse(seq_fh, 'fasta')]
+    return sequences
+
+def check_already_run(settings, input_seqs):
+    pass
+    #settings.output_dir
 

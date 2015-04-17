@@ -197,8 +197,8 @@ class Settings():
         """
         Returns the directory paths for all output
         """
-        dir_paths = {"run_data": "run_data",
-                     "input_seqs": "0.sequences",
+        dir_paths = {"run_data": "1,run_data",
+                     "input_seqs": "1.run_data",
                      "blast_hits": "1.blast_hits",
                      "blast_fail": os.path.join("1.blast_hits", "insufficient_hits"),
                      "alignment": "2.alignment",
@@ -220,20 +220,20 @@ class Settings():
         self.__test_db_connection(self.full_settings['dbconfig'])
         return self.full_settings['dbconfig']
 
-    def __test_db_connection(self, db_config):
+    def __test_db_connection(self, putative_dbconfig):
         """
         Test it is possible to connect to db
         """
 
         try:
-            con = pymysql.connect(**db_config)
+            con = pymysql.connect(**putative_dbconfig)
             cursor = con.cursor()
             cursor.execute("SELECT VERSION()")
             results = cursor.fetchone()
             if not results:
-                raise ValueError("Can't read mysql version in db: {}".format(db_config))
+                raise ValueError("Can't read mysql version in db: {}".format(putative_dbconfig))
         except:
-            raise ValueError("Can't connect to mysql db: {}".format(db_config))
+            raise ValueError("Can't connect to mysql db: {}".format(putative_dbconfig))
 
     @property
     def blast_settings(self):
