@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import dendrogenous as dg
+import ete2
 from dendrogenous.settings import Settings as SettingsClass
 import dendrogenous.utils
 import os
@@ -58,6 +59,7 @@ class Dendrogenous():
         self.masked_seqs = os.path.join(self.settings.dir_paths['mask'], self.seq_name + ".mask")
         self.phylogeny = os.path.join(self.settings.dir_paths['tree'], self.seq_name + ".tre")
         self.named_phylogeny = os.path.join(self.settings.dir_paths['named'], self.seq_name + ".named_tre")
+        self.settings.logger.info("{}: Class Initialised".format(self.seq_name))
 
     def _dependency(self, dependency_file, dependency_method):
         """
@@ -181,6 +183,9 @@ class Dendrogenous():
             self._check_output(seq_fail_file)
             raise dg.utils.GetSeqFail()
 
+        self.settings.logger.info("{}: BLAST Seqs Created".format(self.seq_name))
+
+
     def align(self):
         """
         Align input seqs using kalign
@@ -193,6 +198,7 @@ class Dendrogenous():
                                                self.aligned_seqs)
         dg.utils.execute_cmd(align_cmd)
         self._check_output(self.aligned_seqs)
+        self.settings.logger.info("{}: Alignment Created".format(self.seq_name))
 
     def mask(self):
         '''
@@ -233,7 +239,7 @@ class Dendrogenous():
                 self._check_output(self.masked_seqs)
         else:
             self._check_output(self.masked_seqs)
-
+        self.settings.logger.info("{}: Mask Created".format(self.seq_name))
 
     def estimate_phylogeny(self):
         '''Generate phylogeny from masked seqs using FastTree2'''
@@ -246,6 +252,7 @@ class Dendrogenous():
                                                       self.masked_seqs)
         dg.utils.execute_cmd(phylogeny_cmd)
         self._check_output(self.phylogeny)
+        self.settings.logger.info("{}: Phylogeny Created".format(self.seq_name))
 
     def name_phylogeny(self):
         """
@@ -254,13 +261,13 @@ class Dendrogenous():
         self._dependency(self.phylogeny, self.estimate_phylogeny)
 
         # parse tree using biopython parser
-        parsed_tree = Phylo.read(self.phylogeny, 'newick')
+        parsed_tree = ete2.Tree(self.phylogeny)#, 'newick')
 
         # generate tree_name dict using database
         con = pymysql.connect(**self.settings.dbconfig)
         cur = con.cursor()
         tree_rename_dict = {re.escape(leaf.name): self._get_species_name(leaf.name, cur) \
-                                for leaf in parsed_tree.get_terminals()}
+                                for leaf in parsed_tree.get_leaves()}
         con.close()
 
         # read tree in as text for easy search replace
@@ -278,6 +285,7 @@ class Dendrogenous():
             named_phy_fh.write(renamed_tree)
 
         self._check_output(self.named_phylogeny)
+        self.settings.logger.info("{}: Phylogeny Named".format(self.seq_name))
 
 
     def build_named_phylogeny(self):
@@ -287,9 +295,9 @@ class Dendrogenous():
         try:
             self.name_phylogeny()
         except dg.utils.GetSeqFail:
-            self.settings.logger.warning("SeqFail: {} | too few blastp hits for alignment".format(self.seq_name))
+            self.settings.logger.warning("{}: SeqFail | too few blastp hits for alignment".format(self.seq_name))
         except dg.utils.MaskFail:
-            self.settings.logger.warning("MaskFail: {} | too few sites hits after mask".format(self.seq_name))
+            self.settings.logger.warning("{}: MaskFail | too few sites hits after mask".format(self.seq_name))
         except dg.utils.PipeError as E:
             self.settings.logger.error("!!Error in phylogeny generation for {0}: {1}".format(self.seq_name, E.msg))
         finally:

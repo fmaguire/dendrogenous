@@ -53,6 +53,7 @@ class TestCoreInit(BaseTestCase):
 
     def init_core():
         mock_settings = mock.Mock(dg.settings.Settings)
+        mock_settings.logger = logging.getLogger("test")
         test_class = dg.core.Dendrogenous(test_record,
                                           mock_settings)
         return test_class
@@ -63,6 +64,7 @@ class TestCoreInit(BaseTestCase):
         """
         settings = mock.Mock(dg.settings.Settings)
         settings.dir_paths = self.dir_paths
+        settings.logger = logging.getLogger("test")
 
         test_class = dg.core.Dendrogenous(self.test_record,
                                           settings)
@@ -145,6 +147,7 @@ class TestCoreGetSeqs(BaseTestCase):
         mock_settings.binary_paths = {'blastp': os.path.join(self.binary_path, "blastp")}
         mock_settings.blast_settings = {'num_seqs': 1,
                                         'evalue': 1e-5}
+        mock_settings.logger = logging.getLogger("test")
         genome = os.path.join(self.test_resources, "Escherichia_coli_O157_H7_str._Sakai.fas")
 
         binary_paths = os.path.join("dendrogenous", "dependencies")
@@ -164,6 +167,7 @@ class TestCoreGetSeqs(BaseTestCase):
         """
         mock_settings = mock.Mock(dg.settings.Settings)
         mock_settings.dir_paths = self.dir_paths
+        mock_settings.logger = logging.getLogger("test")
 
         with open(os.path.join(self.test_resources, 'secret.pickle'), 'rb') as secret:
             mock_settings.dbconfig = pickle.load(secret)
@@ -333,6 +337,7 @@ class TestPhylogenyPipe(BaseTestCase):
         mock_settings = mock.Mock(dg.settings.Settings)
         mock_settings.dir_paths = self.dir_paths
         mock_settings.binary_paths = {'kalign': os.path.join(self.binary_path, "kalign")}
+        mock_settings.logger = logging.getLogger("test")
 
         os.mkdir(self.dir_paths['blast_hits'])
         os.mkdir(self.dir_paths['alignment'])
@@ -358,6 +363,9 @@ class TestPhylogenyPipe(BaseTestCase):
         mock_settings = mock.Mock(dg.settings.Settings)
         mock_settings.dir_paths = self.dir_paths
         mock_settings.binary_paths = {'kalign': os.path.join(self.binary_path, "kalign")}
+        mock_settings.logger = logging.getLogger("test")
+
+
         os.mkdir(self.dir_paths['blast_hits'])
         os.mkdir(self.dir_paths['alignment'])
 
@@ -381,6 +389,7 @@ class TestPhylogenyPipe(BaseTestCase):
         mock_settings.dir_paths = self.dir_paths
         mock_settings.minimums = {'min_sites': 29}
         mock_settings.binary_paths = {'trimal': os.path.join(self.binary_path, "trimal")}
+        mock_settings.logger = logging.getLogger("test")
 
         os.mkdir(self.dir_paths['alignment'])
         os.mkdir(self.dir_paths['mask'])
@@ -408,6 +417,7 @@ class TestPhylogenyPipe(BaseTestCase):
         mock_settings.dir_paths = self.dir_paths
         mock_settings.minimums = {'min_sites': 40}
         mock_settings.binary_paths = {'trimal': os.path.join(self.binary_path, "trimal")}
+        mock_settings.logger = logging.getLogger("test")
 
         os.mkdir(self.dir_paths['alignment'])
         os.mkdir(self.dir_paths['mask'])
@@ -467,6 +477,7 @@ class TestPhylogenyPipe(BaseTestCase):
         mock_settings.dir_paths = self.dir_paths
         mock_settings.minimums = {'min_sites': 29}
         mock_settings.binary_paths = {'trimal': os.path.join(self.binary_path, "trimal")}
+        mock_settings.logger = logging.getLogger("test")
 
         os.mkdir(self.dir_paths['alignment'])
         os.mkdir(self.dir_paths['mask'])
@@ -512,6 +523,7 @@ class TestPhylogenyPipe(BaseTestCase):
         mock_settings = mock.Mock(dg.settings.Settings)
         mock_settings.dir_paths = self.dir_paths
         mock_settings.binary_paths = {'FastTree': os.path.join(self.binary_path, "FastTree")}
+        mock_settings.logger = logging.getLogger("test")
 
         os.mkdir(self.dir_paths['mask'])
         os.mkdir(self.dir_paths['tree'])
@@ -538,6 +550,7 @@ class TestPhylogenyPipe(BaseTestCase):
         mock_settings = mock.Mock(dg.settings.Settings)
         mock_settings.dir_paths = self.dir_paths
         mock_settings.binary_paths = {'FastTree': os.path.join(self.binary_path, "FastTree")}
+        mock_settings.logger = logging.getLogger("test")
 
         os.mkdir(self.dir_paths['mask'])
         os.mkdir(self.dir_paths['tree'])
