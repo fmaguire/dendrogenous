@@ -71,7 +71,7 @@ class TestCoreInit(BaseTestCase):
 
         expected_name = "YP_025292_1"
         expected_seed = (">YP_025292_1\n"
-                         "MKQHKAMIVALIVICITAVVAALVTRKDLCEVHIRTGQTEGGEEEEVAVF")
+                         "MKQHKAMIVALIVICITAVVAALVTRKDLCEVHIRTGQTEGGEEEEVAVF\n")
 
         self.assertEqual(test_class.seed, expected_seed)
         self.assertEqual(test_class.seq_name, expected_name)
@@ -253,7 +253,7 @@ class TestCoreGetSeqs(BaseTestCase):
         with open(expected_output_file, 'r') as out_fh:
             seqs = list(SeqIO.parse(out_fh, 'fasta'))
             print(seqs)
-            self.assertEqual(len(seqs), 5)
+            self.assertEqual(len(seqs), 6)
 
 
     @pytest.mark.skipif("gethostname() != 'zorya'")
@@ -297,7 +297,7 @@ class TestCoreGetSeqs(BaseTestCase):
         with open(expected_output_file, 'r') as out_fh:
             seqs = list(SeqIO.parse(out_fh, 'fasta'))
             print(seqs)
-            self.assertEqual(len(seqs), 5)
+            self.assertEqual(len(seqs), 6)
 
     def tearDown(self):
         if os.path.exists('testdir'):

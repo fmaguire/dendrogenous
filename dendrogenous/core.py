@@ -48,8 +48,11 @@ class Dendrogenous():
 
         self.settings = settings
         self.seq_name = seq_record.id
+        ## seq_record with correct name
+        #self.seq_record = seq_record
+        #self.seq_record.id = self.seq_name
 
-        self.seed = ">{0}\n{1}".format(self.seq_name,
+        self.seed = ">{0}\n{1}\n".format(self.seq_name,
                                        seq_record.seq)
 
         self.seq_hits = os.path.join(self.settings.dir_paths['blast_hits'],
@@ -169,14 +172,20 @@ class Dendrogenous():
         Get similar sequences to seed by blasting genomes and parsing the output
         """
         num_hits = 0
-        for genome in self.settings.genomes:
-            blast_output = self._blast(genome)
-            blast_hits = self._parse_blast(blast_output)
-            num_hits += len(blast_hits)
-            with open(self.seq_hits, 'a') as out_fh:
+
+        with open(self.seq_hits, 'a') as out_fh:
+            for genome in self.settings.genomes:
+                blast_output = self._blast(genome)
+                blast_hits = self._parse_blast(blast_output)
+                num_hits += len(blast_hits)
                 SeqIO.write(blast_hits, out_fh, 'fasta')
 
+            # add the actual seq seed to blast hits so it
+            # will be in phylogenies
+            out_fh.write(self.seed)
+
         self._check_output(self.seq_hits)
+
         if num_hits < self.settings.minimums['min_seqs']:
             seq_fail_file = os.path.join(self.settings.dir_paths['blast_fail'], self.seq_name + ".insufficient_hits")
             os.rename(self.seq_hits, seq_fail_file)
