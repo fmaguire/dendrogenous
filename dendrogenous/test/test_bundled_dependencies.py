@@ -77,11 +77,11 @@ class TestBinaryDependencies(BaseTestCase):
         trimal_cmd = "{0} -in {1} -nogaps".format(trimal_binary_path,
                                                   test_input)
 
-        expected_output = [">A",
+        expected_output = [">A 52 bp",
                            "MSVLNKIKTVLTTPIRDIEGRLKKGYYFLSLEISLTYLCNSRCTFCNIWKIY",
-                           ">B",
+                           ">B 52 bp",
                            "MSVLNKIKTVLTTPIRDIEGRLKKGYYFLSLEISLTYYYYSRCTFCNIWKIY",
-                           ">C",
+                           ">C 52 bp",
                            "MSVLNKIKTVLTTPIRDIEGRLKKKKYFLSLEISLTYLCNSRCTFCNIWKIY"]
 
 
@@ -95,11 +95,11 @@ class TestBinaryDependencies(BaseTestCase):
         Run fasttree2 and ensure output phylogeny matches expected output
         """
         fasttree_binary_path = os.path.join(self.binary_path, 'FastTree')
-        test_mask_input = (">A 52 bp\n"
+        test_mask_input = (">A\n"
                            "MSVLNKIKTVLTTPIRDIEGRLKKGYYFLSLEISLTYLCNSRCTFCNIWKIY\n"
-                           ">B 52 bp\n"
+                           ">B\n"
                            "MSVLNKIKTVLTTPIRDIEGRLKKGYYFLSLEISLTYYYYSRCTFCNIWKIY\n"
-                           ">C 52 bp\n"
+                           ">C\n"
                            "MSVLNKIKTVLTTPIRDIEGRLKKKKYFLSLEISLTYLCNSRCTFCNIWKIY")
 
         fasttree_output = self.execute_cmd("{0}".format(fasttree_binary_path),

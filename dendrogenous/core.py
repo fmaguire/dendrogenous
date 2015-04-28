@@ -100,18 +100,22 @@ class Dendrogenous():
         Query the open database to convert a leaf name (a protein_ID) to
         the appropriate species name.
         """
-        query = "SELECT species FROM cider WHERE protein_ID='{}'".format(leaf)
-        db_cursor.execute(query)
-        returned_taxa_name = db_cursor.fetchone()
-        if returned_taxa_name is None:
-            taxa_name = 'UNKNOWN TAXA [{}]'.format(leaf)
-            self.settings.logger.warning("Protein ID lacks species information: {}".format(leaf))
-        else:
-            taxa_name = "{0} [{1}]".format(returned_taxa_name[0],
-                                           leaf)
         if leaf == self.seq_name:
             taxa_name = "SEED SEQUENCE [{}]".format(leaf)
+        else:
+            query = "SELECT species FROM cider WHERE protein_ID='{}'".format(leaf)
+            db_cursor.execute(query)
+            returned_taxa_name = db_cursor.fetchone()
+            if returned_taxa_name is None:
+                taxa_name = 'UNKNOWN TAXA [{}]'.format(leaf)
+                self.settings.logger.warning(\
+                        "{0}: NameError | Protein ID ({1}) is missing species information".format(\
+                            self.seq_name, leaf))
+            else:
+                taxa_name = "{0} [{1}]".format(returned_taxa_name[0],
+                                               leaf)
         return taxa_name
+
     def _blast(self, genome):
         """
         Blast seed sequence against db using BLASTP

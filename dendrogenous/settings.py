@@ -105,16 +105,19 @@ class Settings():
         """
         logger = logging.getLogger("dg_log")
         logger.setLevel(logging.DEBUG)
+
+        ch = logging.StreamHandler()
+        ch.setLevel(logging.DEBUG)
+        ch_formatter = logging.Formatter("%(asctime)s - %(message)s")
+        ch.setFormatter(ch_formatter)
+        logger.addHandler(ch)
+
         fh = logging.FileHandler(os.path.join(self.dir_paths['run_data'],
                                               "run.log"))
         fh.setLevel(logging.DEBUG)
-        ch = logging.StreamHandler()
-        ch.setLevel(logging.ERROR)
-        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-        fh.setFormatter(formatter)
-        ch.setFormatter(formatter)
+        fh_formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+        fh.setFormatter(fh_formatter)
         logger.addHandler(fh)
-        logger.addHandler(ch)
         return logger
 
 
