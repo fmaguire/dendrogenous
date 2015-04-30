@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-
+# Automatically generate phylogenies from a settings file
+# specifying input fasta and genomes
 import sys
 import dendrogenous as dg
 import dendrogenous.settings
@@ -28,4 +29,8 @@ def build_phylogeny(seq, settings):
     seq_job.build_named_phylogeny()
 
 if __name__=='__main__':
+    if len(sys.argv) != 2:
+        print("USAGE: build_phylogenies.py settings.json")
+        sys.exit(1)
+
     main(sys.argv[1])

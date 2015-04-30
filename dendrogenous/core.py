@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import numpy as np
+
 import dendrogenous as dg
 import ete2
 from dendrogenous.settings import Settings as SettingsClass
@@ -9,6 +11,8 @@ import io
 import re
 import pymysql
 import subprocess
+
+import numpy
 from Bio import Phylo
 from Bio import SeqIO
 from Bio.Blast import NCBIXML
@@ -315,4 +319,63 @@ class Dendrogenous():
             self.settings.logger.error("!!Error in phylogeny generation for {0}: {1}".format(self.seq_name, E.msg))
         finally:
             return
+
+
+
+class TreeParser():
+    """
+    Parse a folder of unlabelled, or a directory
+    hierarchy of labelled, newick phylogenies
+    using a supplied set of labels
+    """
+
+    def __init__(self, categories):
+        """
+        categories = {bacteria: (bacterial, taxa, names),
+                      host: (alveolate taxa labels),
+                      ...}
+        """
+
+        self.ncbi_taxa = ete2.ncbi_taxonomy.NCBITaxa()
+
+
+    def _get_taxonomy(self, node_labels):
+        """
+        Return a taxonomic lineage from a tree label name
+        """
+
+        correct_name = self.ncbi_taxa.get_fuzzy_name_translation(node_label)
+        taxid = self.ncbi_taxa.get_name_translator
+
+    def build_training(self):
+        """
+        Return a matrix and labels in a vector
+        """
+        matrix = self.build_matrix()
+        labels = self.encode_labels()
+        return matrix, labels
+
+    def build_matrix(self):
+        """
+        Generate a matrix from list of phylogeny filepaths
+        """
+
+        vectors = []
+        for phylogeny in phylogenies:
+
+
+
+            vectors.append()
+
+
+
+
+
+
+
+
+
+
+
+
 
