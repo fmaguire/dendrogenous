@@ -1,12 +1,18 @@
 #!/usr/bin/env python
+from __future__ import unicode_literals
+from __future__ import print_function
 
 import dendrogenous as dg
 import dendrogenous.core
 
 
+
 import logging
 import unittest
-import unittest.mock as mock
+try:
+    import unittest.mock as mock
+except:
+    import mock
 import os
 import shutil
 import sys
