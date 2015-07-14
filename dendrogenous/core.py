@@ -82,6 +82,7 @@ class Dendrogenous():
         has been created and is not empty
         raising a PipeError if it has not
         """
+
         if not os.path.exists(expected_file):
             raise dg.utils.PipeError("Expected file does not exist: {}".format(expected_file))
         else:
@@ -199,7 +200,6 @@ class Dendrogenous():
             os.rename(self.seq_hits, seq_fail_file)
             self._check_output(seq_fail_file)
             raise dg.utils.GetSeqFail()
-
         self.settings.logger.info("{}: BLAST Seqs Created".format(self.seq_name))
 
 
@@ -317,8 +317,8 @@ class Dendrogenous():
             self.settings.logger.warning("{}: MaskFail | too few sites hits after mask".format(self.seq_name))
         except dg.utils.PipeError as E:
             self.settings.logger.error("!!Error in phylogeny generation for {0}: {1}".format(self.seq_name, E.msg))
-        finally:
-            return
+
+        return
 
 
 
