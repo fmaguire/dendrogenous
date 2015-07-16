@@ -6,27 +6,32 @@ import dendrogenous as dg
 import dendrogenous.settings
 import dendrogenous.utils
 import dendrogenous.core
-import multiprocessing
+import joblib
+import pickle
+#multiprocessing
 
 def main(settings_file):
 
-    settings         = dg.settings.Settings(settings_file)
+    settings = dg.settings.Settings(settings_file)
 
     input_seqs       = dg.utils.parse_seqs(settings.input_seqs)
 
     seqs_needing_run = dg.utils.check_already_run(settings, input_seqs)
 
-    processes = [multiprocessing.Process(target=build_phylogeny, args=(seq, settings)) for seq in seqs_needing_run]
+    r = joblib.Parallel(n_jobs=24, verbose=5)(joblib.delayed(pool_process)\
+            (seq, settings_file) for seq in seqs_needing_run)
 
-    for p in processes:
-        p.start()
 
-    for p in processes:
-        p.join()
-
-def build_phylogeny(seq, settings):
+def pool_process(seq, settings_file):
+    """
+    A hacky and unecessary way to provide a pickle serealisable
+    object for multiprocessing to pass off to workers
+    - inefficiency in reinstantiating a settings class every time
+    """
+    settings = dg.settings.Settings(settings_file)
     seq_job = dg.core.Dendrogenous(seq, settings)
     seq_job.build_named_phylogeny()
+
 
 if __name__=='__main__':
     if len(sys.argv) != 2:
