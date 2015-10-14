@@ -3,7 +3,7 @@
 import numpy as np
 
 import dendrogenous as dg
-import ete2
+import ete3
 from dendrogenous.settings import Settings as SettingsClass
 import dendrogenous.utils
 import os
@@ -278,7 +278,7 @@ class Dendrogenous():
         self._dependency(self.phylogeny, self.estimate_phylogeny)
 
         # parse tree using biopython parser
-        parsed_tree = ete2.Tree(self.phylogeny)#, 'newick')
+        parsed_tree = ete3.Tree(self.phylogeny)#, 'newick')
 
         # generate tree_name dict using database
         con = pymysql.connect(**self.settings.dbconfig)
@@ -336,7 +336,7 @@ class TreeParser():
                       ...}
         """
 
-        self.ncbi_taxa = ete2.ncbi_taxonomy.NCBITaxa()
+        self.ncbi_taxa = ete3.ncbi_taxonomy.NCBITaxa()
 
 
     def _get_taxonomy(self, node_labels):

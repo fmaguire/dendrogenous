@@ -15,7 +15,7 @@
 import os                                       #to handle system interactions
 import shutil                                   #mainly for rmtree utility
 import subprocess                               #to handle calling external programs and multithreading
-import ete2                                     #phylogenetic tree parsing
+import ete3                                     #phylogenetic tree parsing
 from Bio import Entrez, SeqIO, SearchIO         #to handle sequence data, parse and query taxonomic db
 import sklearn.neighbors as skn                 #to categorise sequences using knn classifier
 import numpy as np                              #to handle vector operations provided in training dataset
@@ -61,7 +61,7 @@ class TreeParser():
         self.n = n
 
     def parse_phylogeny(self, input_tree):
-        '''Function to parse phylogeny using ete2'''
+        '''Function to parse phylogeny using ete3'''
 
         #ensure tree file is real
         try:
@@ -70,7 +70,7 @@ class TreeParser():
             print('Tree File Does Not Exist: '+input_tree)
 
         #read tree file in as ete tree object
-        tree = ete2.Tree(input_tree)
+        tree = ete3.Tree(input_tree)
 
         #find node of seed sequence
         seed_node = tree.search_nodes(name="SEED SEQUENCE ")
@@ -136,7 +136,7 @@ class TreeParser():
         return nearest_relatives_and_distances
 
     def taxonomy_look_up_of_relatives(self, taxdb):
-        '''use ete2 NCBITaxa to look up closest relatives to seed'''
+        '''use ete3 NCBITaxa to look up closest relatives to seed'''
 
         for relative_distance_tuple in relatives:
             nearest_name = taxdb.get_fuzzy_name_translation(relatives_and_distance_tuple[0])
@@ -272,7 +272,7 @@ if __name__=='__main__':
             #et_nearest_relatives(seed_node, tree, n_neighbors_to_recover)
 
 
-            # read the tree using ete2 and return a list of the n_nearest_relatives and distances from seed
+            # read the tree using ete3 and return a list of the n_nearest_relatives and distances from seed
             nearest_seed_relatives = parse_phylogeny(tree, 5)
 
             # perform a taxonomic lookup of nearest nodes
