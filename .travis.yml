@@ -4,9 +4,9 @@ python:
   - "3.4"
 
 install: 
-  - "pip install -r requirements.txt --use-mirrors"
+  - "pip install -r requirements.txt"
   - "pip install six"
-  - "pip install git+git://github.com/fmaguire/ete.git"
+  - "pip install git+git://github.com/jhcepas/ete.git"
   - "pip install -e ."
 
 script: 
