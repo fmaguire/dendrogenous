@@ -59,7 +59,7 @@ class TestCoreInit(BaseTestCase):
 
     def init_core():
         mock_settings = mock.Mock(dg.settings.Settings)
-        mock_settings.logger = logging.getLogger("test")
+        mock_settings.logger_name = "test"
         test_class = dg.core.Dendrogenous(test_record,
                                           mock_settings)
         return test_class
@@ -70,7 +70,7 @@ class TestCoreInit(BaseTestCase):
         """
         settings = mock.Mock(dg.settings.Settings)
         settings.dir_paths = self.dir_paths
-        settings.logger = logging.getLogger("test")
+        settings.logger_name = "test"
 
         test_class = dg.core.Dendrogenous(self.test_record,
                                           settings)
@@ -153,7 +153,7 @@ class TestCoreGetSeqs(BaseTestCase):
         mock_settings.binary_paths = {'blastp': os.path.join(self.binary_path, "blastp")}
         mock_settings.blast_settings = {'num_seqs': 1,
                                         'evalue': 1e-5}
-        mock_settings.logger = logging.getLogger("test")
+        mock_settings.logger_name = "test"
         genome = os.path.join(self.test_resources, "Escherichia_coli_O157_H7_str._Sakai.fas")
 
         binary_paths = os.path.join("dendrogenous", "dependencies")
@@ -173,7 +173,7 @@ class TestCoreGetSeqs(BaseTestCase):
         """
         mock_settings = mock.Mock(dg.settings.Settings)
         mock_settings.dir_paths = self.dir_paths
-        mock_settings.logger = logging.getLogger("test")
+        mock_settings.logger_name = "test"
 
         with open(os.path.join(self.test_resources, 'secret.pickle'), 'rb') as secret:
             mock_settings.dbconfig = pickle.load(secret)
