@@ -57,7 +57,7 @@ class Settings():
 
         # needs a directory structure to place the logfile
         self.__create_directory_structure()
-        self.logger = self.__get_logger()
+        self.logger_name = self.__get_logger()
 
     def __collate_default_and_user_settings(self, default_settings, user_input, required_settings):
         """
@@ -101,9 +101,11 @@ class Settings():
 
     def __get_logger(self):
         """
-        Initialise and return logger
+        Initialise and return logger name
         """
-        logger = logging.getLogger("dg_log")
+
+        logger_name = "dg_log"
+        logger = logging.getLogger(logger_name)
         logger.setLevel(logging.DEBUG)
 
         ch = logging.StreamHandler()
@@ -118,7 +120,8 @@ class Settings():
         fh_formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
         fh.setFormatter(fh_formatter)
         logger.addHandler(fh)
-        return logger
+
+        return logger_name
 
 
     def __parse_settings(self, settings_file):

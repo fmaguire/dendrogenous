@@ -12,6 +12,8 @@ import re
 import pymysql
 import subprocess
 
+import logging
+
 import numpy
 from Bio import Phylo
 from Bio import SeqIO
@@ -56,6 +58,8 @@ class Dendrogenous():
         #self.seq_record = seq_record
         #self.seq_record.id = self.seq_name
 
+        self.logger = logging.getLogger(self.settings.logger_name)
+
         self.seed = ">{0}\n{1}\n".format(self.seq_name,
                                        seq_record.seq)
 
@@ -66,7 +70,11 @@ class Dendrogenous():
         self.masked_seqs = os.path.join(self.settings.dir_paths['mask'], self.seq_name + ".mask")
         self.phylogeny = os.path.join(self.settings.dir_paths['tree'], self.seq_name + ".tre")
         self.named_phylogeny = os.path.join(self.settings.dir_paths['named'], self.seq_name + ".named_tre")
-        self.settings.logger.info("{}: Class Initialised".format(self.seq_name))
+
+
+
+        self.logger.info("{}: Class Initialised".format(self.seq_name))
+
 
     def _dependency(self, dependency_file, dependency_method):
         """
@@ -113,7 +121,7 @@ class Dendrogenous():
             returned_taxa_name = db_cursor.fetchone()
             if returned_taxa_name is None:
                 taxa_name = 'UNKNOWN TAXA [{}]'.format(leaf)
-                self.settings.logger.warning(\
+                self.logger.warning(\
                         "{0}: NameError | Protein ID ({1}) is missing species information".format(\
                             self.seq_name, leaf))
             else:
@@ -166,7 +174,7 @@ class Dendrogenous():
                         "WHERE protein_ID='{0}'".format(hit_id))
             sequence = cur.fetchone()
             if sequence is None:
-                self.settings.logger.warning("Blast hit protein_ID not in db: {}".format(hit_id))
+                self.logger.warning("Blast hit protein_ID not in db: {}".format(hit_id))
                 continue
 
             sequence_record = SeqRecord(\
@@ -200,7 +208,7 @@ class Dendrogenous():
             os.rename(self.seq_hits, seq_fail_file)
             self._check_output(seq_fail_file)
             raise dg.utils.GetSeqFail()
-        self.settings.logger.info("{}: BLAST Seqs Created".format(self.seq_name))
+        self.logger.info("{}: BLAST Seqs Created".format(self.seq_name))
 
 
     def align(self):
@@ -215,7 +223,7 @@ class Dendrogenous():
                                                self.aligned_seqs)
         dg.utils.execute_cmd(align_cmd)
         self._check_output(self.aligned_seqs)
-        self.settings.logger.info("{}: Alignment Created".format(self.seq_name))
+        self.logger.info("{}: Alignment Created".format(self.seq_name))
 
     def mask(self):
         '''
@@ -256,7 +264,7 @@ class Dendrogenous():
                 self._check_output(self.masked_seqs)
         else:
             self._check_output(self.masked_seqs)
-        self.settings.logger.info("{}: Mask Created".format(self.seq_name))
+        self.logger.info("{}: Mask Created".format(self.seq_name))
 
     def estimate_phylogeny(self):
         '''Generate phylogeny from masked seqs using FastTree2'''
@@ -269,7 +277,7 @@ class Dendrogenous():
                                                       self.masked_seqs)
         dg.utils.execute_cmd(phylogeny_cmd)
         self._check_output(self.phylogeny)
-        self.settings.logger.info("{}: Phylogeny Created".format(self.seq_name))
+        self.logger.info("{}: Phylogeny Created".format(self.seq_name))
 
     def name_phylogeny(self):
         """
@@ -302,7 +310,7 @@ class Dendrogenous():
             named_phy_fh.write(renamed_tree)
 
         self._check_output(self.named_phylogeny)
-        self.settings.logger.info("{}: Phylogeny Named".format(self.seq_name))
+        self.logger.info("{}: Phylogeny Named".format(self.seq_name))
 
 
     def build_named_phylogeny(self):
@@ -312,11 +320,11 @@ class Dendrogenous():
         try:
             self.name_phylogeny()
         except dg.utils.GetSeqFail:
-            self.settings.logger.warning("{}: SeqFail | too few blastp hits for alignment".format(self.seq_name))
+            self.logger.warning("{}: SeqFail | too few blastp hits for alignment".format(self.seq_name))
         except dg.utils.MaskFail:
-            self.settings.logger.warning("{}: MaskFail | too few sites hits after mask".format(self.seq_name))
+            self.logger.warning("{}: MaskFail | too few sites hits after mask".format(self.seq_name))
         except dg.utils.PipeError as E:
-            self.settings.logger.error("!!Error in phylogeny generation for {0}: {1}".format(self.seq_name, E.msg))
+            self.logger.error("!!Error in phylogeny generation for {0}: {1}".format(self.seq_name, E.msg))
 
         return
 
