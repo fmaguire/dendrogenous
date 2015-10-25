@@ -6,9 +6,8 @@ import dendrogenous as dg
 import dendrogenous.settings
 import dendrogenous.utils
 import dendrogenous.core
-#import joblib
+import joblib
 import pickle
-import multiprocessing as mp
 
 def main(settings_file):
 
@@ -18,10 +17,8 @@ def main(settings_file):
 
     seqs_needing_run = dg.utils.check_already_run(settings, input_seqs)
 
-    pool = mp.Pool(processes=24)
-
-    processes = [pool.apply(pool_process, args=(seq, settings)) for seq in seqs_needing_run]
-
+    r = joblib.Parallel(n_jobs=24, verbose=5)(joblib.delayed(pool_process)\
+            (seq, settings) for seq in seqs_needing_run)
 
 def pool_process(seq, settings):
     """

@@ -7,7 +7,6 @@ import dendrogenous.core
 
 
 
-import logging
 import unittest
 try:
     import unittest.mock as mock
@@ -201,7 +200,7 @@ class TestCoreGetSeqs(BaseTestCase):
         """
         mock_settings = mock.Mock(dg.settings.Settings)
         mock_settings.dir_paths = self.dir_paths
-        mock_settings.logger = logging.getLogger("test")
+        mock_settings.logger_name = "test"
 
         with open(os.path.join(self.test_resources, 'secret.pickle'), 'rb') as secret:
             mock_settings.dbconfig = pickle.load(secret)
@@ -217,8 +216,6 @@ class TestCoreGetSeqs(BaseTestCase):
         expected_output = []
 
         self.assertEqual(parsed_blast, expected_output)
-        # test logging?
-        #self.assertIs(test_class.logger.error, "foobar")
 
 
     @pytest.mark.skipif("gethostname() != 'zorya'")
@@ -238,7 +235,7 @@ class TestCoreGetSeqs(BaseTestCase):
         mock_settings.genomes= [os.path.join(self.test_resources, "Escherichia_coli_O157_H7_str._Sakai.fas"),
                                 os.path.join(self.test_resources, "Escherichia_coli_IAI39.fas"),
                                 os.path.join(self.test_resources, "Nanoarchaeum_equitans_Kin4-M.fas")]
-        mock_settings.logger = logging.getLogger("test")
+        mock_settings.logger_name = "test"
 
         # make output dir that is normally done by runner
         os.mkdir('testdir')
@@ -280,7 +277,7 @@ class TestCoreGetSeqs(BaseTestCase):
         mock_settings.genomes= [os.path.join(self.test_resources, "Escherichia_coli_O157_H7_str._Sakai.fas"),
                                 os.path.join(self.test_resources, "Escherichia_coli_IAI39.fas"),
                                 os.path.join(self.test_resources, "Nanoarchaeum_equitans_Kin4-M.fas")]
-        mock_settings.logger = logging.getLogger("test")
+        mock_settings.logger_name = "test"
 
         # make output dir that is normally done by runner
         os.mkdir('testdir')
@@ -343,7 +340,7 @@ class TestPhylogenyPipe(BaseTestCase):
         mock_settings = mock.Mock(dg.settings.Settings)
         mock_settings.dir_paths = self.dir_paths
         mock_settings.binary_paths = {'kalign': os.path.join(self.binary_path, "kalign")}
-        mock_settings.logger = logging.getLogger("test")
+        mock_settings.logger_name = "test"
 
         os.mkdir(self.dir_paths['blast_hits'])
         os.mkdir(self.dir_paths['alignment'])
@@ -369,7 +366,7 @@ class TestPhylogenyPipe(BaseTestCase):
         mock_settings = mock.Mock(dg.settings.Settings)
         mock_settings.dir_paths = self.dir_paths
         mock_settings.binary_paths = {'kalign': os.path.join(self.binary_path, "kalign")}
-        mock_settings.logger = logging.getLogger("test")
+        mock_settings.logger_name = "test"
 
 
         os.mkdir(self.dir_paths['blast_hits'])
@@ -395,7 +392,7 @@ class TestPhylogenyPipe(BaseTestCase):
         mock_settings.dir_paths = self.dir_paths
         mock_settings.minimums = {'min_sites': 29}
         mock_settings.binary_paths = {'trimal': os.path.join(self.binary_path, "trimal")}
-        mock_settings.logger = logging.getLogger("test")
+        mock_settings.logger_name = "test"
 
         os.mkdir(self.dir_paths['alignment'])
         os.mkdir(self.dir_paths['mask'])
@@ -423,7 +420,7 @@ class TestPhylogenyPipe(BaseTestCase):
         mock_settings.dir_paths = self.dir_paths
         mock_settings.minimums = {'min_sites': 40}
         mock_settings.binary_paths = {'trimal': os.path.join(self.binary_path, "trimal")}
-        mock_settings.logger = logging.getLogger("test")
+        mock_settings.logger_name = "test"
 
         os.mkdir(self.dir_paths['alignment'])
         os.mkdir(self.dir_paths['mask'])
@@ -453,7 +450,7 @@ class TestPhylogenyPipe(BaseTestCase):
         """
         mock_settings = mock.Mock(dg.settings.Settings)
         mock_settings.dir_paths = self.dir_paths
-        mock_settings.logger = logging.getLogger("test")
+        mock_settings.logger_name = "test"
         mock_settings.minimums = {'min_sites': 100}
         mock_settings.binary_paths = {'trimal': os.path.join(self.binary_path, "trimal")}
 
@@ -483,7 +480,7 @@ class TestPhylogenyPipe(BaseTestCase):
         mock_settings.dir_paths = self.dir_paths
         mock_settings.minimums = {'min_sites': 29}
         mock_settings.binary_paths = {'trimal': os.path.join(self.binary_path, "trimal")}
-        mock_settings.logger = logging.getLogger("test")
+        mock_settings.logger_name = "test"
 
         os.mkdir(self.dir_paths['alignment'])
         os.mkdir(self.dir_paths['mask'])
@@ -529,7 +526,7 @@ class TestPhylogenyPipe(BaseTestCase):
         mock_settings = mock.Mock(dg.settings.Settings)
         mock_settings.dir_paths = self.dir_paths
         mock_settings.binary_paths = {'FastTree': os.path.join(self.binary_path, "FastTree")}
-        mock_settings.logger = logging.getLogger("test")
+        mock_settings.logger_name = "test"
 
         os.mkdir(self.dir_paths['mask'])
         os.mkdir(self.dir_paths['tree'])
@@ -556,7 +553,7 @@ class TestPhylogenyPipe(BaseTestCase):
         mock_settings = mock.Mock(dg.settings.Settings)
         mock_settings.dir_paths = self.dir_paths
         mock_settings.binary_paths = {'FastTree': os.path.join(self.binary_path, "FastTree")}
-        mock_settings.logger = logging.getLogger("test")
+        mock_settings.logger_name = "test"
 
         os.mkdir(self.dir_paths['mask'])
         os.mkdir(self.dir_paths['tree'])
@@ -579,7 +576,7 @@ class TestPhylogenyPipe(BaseTestCase):
         """
         mock_settings = mock.Mock(dg.settings.Settings)
         mock_settings.dir_paths = self.dir_paths
-        mock_settings.logger = logging.getLogger("test")
+        mock_settings.logger_name = "test"
         with open(os.path.join(self.test_resources, 'secret.pickle'), 'rb') as secret:
             mock_settings.dbconfig = pickle.load(secret)
 
