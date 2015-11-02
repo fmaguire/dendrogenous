@@ -663,9 +663,12 @@ class TestBuildTraining(BaseTestCase):
 
         X, y, encoded_labels = a.build_training()
 
-        print(X)
-        print(y)
 
+        self.assertEqual(X.shape, (46,4))
+
+        self.assertEqual(y.shape, (46,1))
+
+        self.assertEqual(type(encoded_labels), dict)
 
 
 if __name__ == '__main__':

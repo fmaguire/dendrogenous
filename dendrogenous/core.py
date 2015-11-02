@@ -12,6 +12,9 @@ import re
 import pymysql
 import subprocess
 
+import glob
+import sqlite3
+
 import logging
 
 import numpy
@@ -359,8 +362,9 @@ class BuildTraining():
         translate category names to taxid
         """
         for key, value in categories.items():
+            taxids = self.taxaparse.get_name_translator(categories[key]).values()
             categories[key] =  \
-                set(self.taxaparse.get_name_translator(categories[key]).values())
+                    set([x[0] for x in taxids])
         return categories
 
     def encode_labels(self, named_label_definitions):
@@ -508,7 +512,7 @@ class TreeParser():
         species_name = ' '.join(node_label.name.split()[:2])
         taxids = self.taxaparse.get_name_translator([species_name])
         taxid = taxids[species_name]
-        lineage = self.taxaparse.get_lineage(taxid)
+        lineage = self.taxaparse.get_lineage(taxid[0])
         return lineage
 
 
