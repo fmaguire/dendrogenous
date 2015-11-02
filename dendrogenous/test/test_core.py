@@ -609,6 +609,64 @@ class TestPhylogenyPipe(BaseTestCase):
         if os.path.exists(self.test_dir):
             shutil.rmtree(self.test_dir)
 
+class TestBuildTraining(BaseTestCase):
+
+    def test_function(self):
+
+        training_dir = os.path.join(self.test_resources, "training")
+        settings = {"class_defs": {"host": ["Alveolata",
+                            "Paramecium",
+                            "Tetrahymena",
+                            "Oxytricha"],
+                   "endosymbiont": ["Arabidopsis",
+                            "Chlamydomonas",
+                            "Ostreococcus",
+                            "Micromonas",
+                            "Chlorella",
+                            "Physcomitrella"],
+                   "food": ["Bacteria",
+                            "Bacillus",
+                            "Escherichia",
+                            "Salmonella",
+                            "Chlamydophila",
+                            "Chlorobium",
+                            "Deinococcus",
+                            "Caulobacter"],
+                   "unknown":["Saccharomyces",
+                            "Neurospora",
+                            "Homo",
+                            "Mus",
+                            "Dictyostelium",
+                            "Toxoplasma",
+                            "Guillardia",
+                            "Bigelowiella",
+                            "Emiliania",
+                            "Aureococcus",
+                            "Ectocarpus",
+                            "Schizosaccharomyces",
+                            "Amycolatopsis",
+                            "Aquifex",
+                            "Sulfolobus",
+                            "Nanoarchaeum",
+                            "Haloferax",
+                            "Methanococcus",
+                            "Cenarchaeum"]},
+                "class_locs": {"host": os.path.join(training_dir, "host"),
+                   "endosymbiont": os.path.join(training_dir, "endosymbiont"),
+                   "food": os.path.join(training_dir, "food"),
+                   "unknown": os.path.join(training_dir, "unknown")}}
+
+        label_def = settings['class_defs']
+        label_loc = settings['class_locs']
+
+        a = dg.core.BuildTraining(label_def, label_loc)
+
+        X, y, encoded_labels = a.build_training()
+
+        print(X)
+        print(y)
+
+
 
 if __name__ == '__main__':
     unittest.main()

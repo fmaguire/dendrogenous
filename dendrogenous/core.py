@@ -329,6 +329,101 @@ class Dendrogenous():
         return
 
 
+class BuildTraining():
+    """
+    Build full training X and y
+    """
+
+    def __init__(self, named_label_definitions, label_locations):
+        """
+        Class to build full training set,
+        named_label_definitions - full name definitions of characters
+        related to each class i.e. "{'endosymbiont' : ['chlorella', 'archaeplastida...'
+
+        label_locations: folder for each labelled class {'endosymbiont': 'endosymbiont/trees}
+        """
+
+        self.taxaparse = ete3.ncbi_taxonomy.NCBITaxa()
+        self.named_label_definitions = named_label_definitions
+        self.label_locations = label_locations
+
+    def check_class_loss(self):
+        """
+        Make sure all class labels are included in the various class dicts
+        """
+        raise NotImplemented
+
+
+    def translate_categories(self, categories):
+        """
+        translate category names to taxid
+        """
+        for key, value in categories.items():
+            categories[key] =  \
+                set(self.taxaparse.get_name_translator(categories[key]).values())
+        return categories
+
+    def encode_labels(self, named_label_definitions):
+        """
+        Numerically encode class labels
+        """
+        label_encoding = {name: index for index, name in enumerate(named_label_definitions)}
+        return label_encoding
+
+
+    def build_training(self):
+        """
+        Build full X and y matrix
+        """
+
+        encoded_labels = self.encode_labels(self.named_label_definitions)
+
+        taxid_label_definitions = self.translate_categories(self.named_label_definitions)
+
+        X = []
+        y = []
+
+        for label, loc in self.label_locations.items():
+            parser = LabelParser(label, loc)
+            X_part, y_part = parser.build_subX_y(taxid_label_definitions,
+                                                 encoded_labels)
+            X = X + X_part
+            y = y + y_part
+
+        return np.vstack(X), np.vstack(y), encoded_labels
+
+
+class LabelParser():
+    """
+    Parse a folder of phylogenies
+    """
+
+    def __init__(self, label, location):
+        """
+        Provide a label and location
+        of folder of trees to parse
+        """
+        self.loc = location
+        self.label = label
+        self.trees = glob.glob(os.path.join(self.loc, '*tre'))
+
+    def parse_folder(self, label_definitions, label_encoding):
+        """
+        Parse all phylogenies in tree list
+        """
+        class_vector = []
+        for tree in self.trees:
+            parser = TreeParser(tree)
+            class_vector.append(parser.get_tree_vector(label_definitions, label_encoding))
+        return class_vector
+
+
+    def build_subX_y(self, label_definitions, label_encoding):
+
+        vectors = self.parse_folder(label_definitions, label_encoding)
+        y = [label_encoding[self.label] for x in range(len(vectors))]
+        return vectors, y
+
 
 class TreeParser():
     """
@@ -337,53 +432,139 @@ class TreeParser():
     using a supplied set of labels
     """
 
-    def __init__(self, categories):
+    def __init__(self, tree, seed_node_indicator='SEED'):
         """
-        categories = {bacteria: (bacterial, taxa, names),
-                      host: (alveolate taxa labels),
-                      ...}
+        TreeParser is mainly a class to generate a data vector
+        for a given named phylogeny.
+
+        tree - the tree filename itself
+
+        seed_node_indicator - the string that indicates the seed node
+                              defaults to 'SEED'
+       """
+        self.tree = ete3.Tree(tree)
+        self.taxaparse = ete3.ncbi_taxonomy.NCBITaxa()
+        self.seed_node = self._find_seed(seed_node_indicator)
+
+
+    def _find_seed(self, seed_node_indicator):
         """
+        Iterate over nodes and find seed node based
+        on seed node indicator word
+        """
+        for i in self.tree:
+            if i.name.split()[0] == seed_node_indicator:
+                return i
 
-        self.ncbi_taxa = ete3.ncbi_taxonomy.NCBITaxa()
+        # if tree has finished iterating over and
+        # hasn't returned raise error
+        raise ValueError("Seed node not found")
 
 
-    def _get_taxonomy(self, node_labels):
+    def get_n_nearest_nodes(self, n_neighbours):
+        """
+        Get closest n nodes to seed in phylogeny
+        returning a list of (node name, distance betwee seed and node) tuples
+        """
+        curr_node = self.seed_node
+        neighbours = []
+
+        # while we have too few neighbours and there are more
+        # parent nodes
+
+        while len(neighbours) < n_neighbours and curr_node.up:
+            curr_node = curr_node.up
+            children = curr_node.get_leaves()
+            for node in children:
+                if node is not self.seed_node:
+                    neighbours.append((node, self.seed_node.get_distance(node)))
+
+        neighbours = sorted(neighbours, key=lambda x: x[1])
+
+        # if there are more than n.neighbours then take closest n to
+        # seed
+        if len(neighbours) > n_neighbours:
+            neighbours = neighbours[:n_neighbours]
+
+        return neighbours
+
+    def get_lineages(self, nearest_nodes):
+        """
+        Get taxonomy for the n nearest nodes
+        in the form of a list of tuples of
+        the node and its distance from the seed """
+        lineages = []
+        for name, distance in nearest_nodes:
+            lineages.append((self.get_taxonomy(name), distance))
+        return lineages
+
+
+    def get_taxonomy(self, node_label):
         """
         Return a taxonomic lineage from a tree label name
+        doesn't use fuzzy as its very slow and names
+        should be right
         """
+        species_name = ' '.join(node_label.name.split()[:2])
+        taxids = self.taxaparse.get_name_translator([species_name])
+        taxid = taxids[species_name]
+        lineage = self.taxaparse.get_lineage(taxid)
+        return lineage
 
-        correct_name = self.ncbi_taxa.get_fuzzy_name_translation(node_label)
-        taxid = self.ncbi_taxa.get_name_translator
 
-    def build_training(self):
+    def category_lineage_lookup(self, lineage, label_definitions):
         """
-        Return a matrix and labels in a vector
+        Lookup of a specific lineage returning
+        the category label for that lineage
         """
-        matrix = self.build_matrix()
-        labels = self.encode_labels()
-        return matrix, labels
+        for rank in lineage[0]:
+            for key, value in label_definitions.items():
+                if rank in value:
+                    return key, lineage[1]
+        return "unknown", lineage[1]
 
-    def build_matrix(self):
+
+    def get_tree_vector(self, label_definitions, label_encodings,
+            n_neighbours=10):
         """
-        Generate a matrix from list of phylogeny filepaths
+        Generate the tree vector divided by category
+        label_encoding is a dict of {'labelname': label_index}
+
+        Both must include "unknown"
+        label_definitions - an ordered dict of class label names and a list of
+                            corresponding taxids
+                           {bacteria: (bacterial taxids),
+                             host: (alveolate taxa labels),
+                             ...}
+        label_encoding - dict containg the label names as keys and values
+                         as the encoded label name
+                         {'bacteria': 1, 'unknown': 4}
+
+        n_neighbours - number of nearest neighbours to look at (default 10)
+
+
         """
+        if len(label_definitions) != len(label_encodings): raise ValueError("label defs and encoding must contain the same"\
+                             "keys")
 
-        vectors = []
-        for phylogeny in phylogenies:
+        nodes = self.get_n_nearest_nodes(n_neighbours)
 
+        taxa_lineages = self.get_lineages(nodes)
 
+        tree_vector = [0.0 for x in range(len(label_definitions))]
 
-            vectors.append()
-
-
-
-
-
-
-
+        for lineage in taxa_lineages:
+            label, distance = self.category_lineage_lookup(lineage,
+                                                           label_definitions)
 
 
+            # take reciprocal of distance plus a small fudge factor
+            # to prevent infinite division
+            distance = 1/(distance + 1e-10)
+            label_index = label_encodings[label]
+            tree_vector[label_index] += distance
 
+        return tree_vector
 
 
 
