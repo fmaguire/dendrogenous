@@ -5,6 +5,8 @@ from __future__ import print_function
 import dendrogenous as dg
 import dendrogenous.core
 
+import numpy as np
+
 
 
 import unittest
@@ -668,7 +670,61 @@ class TestBuildTraining(BaseTestCase):
 
         self.assertEqual(y.shape, (46,1))
 
-        self.assertEqual(type(encoded_labels), dict)
+        self.assertEqual(encoded_labels, {"endosymbiont":0, "food":1, "host":2, "unknown":3})
+
+
+class TestBuildTest(BaseTestCase):
+
+    def test_functional(self):
+
+        training_dir = os.path.join(self.test_resources, "training")
+        settings = {"class_defs": {"host": ["Alveolata",
+                            "Paramecium",
+                            "Tetrahymena",
+                            "Oxytricha"],
+                   "endosymbiont": ["Arabidopsis",
+                            "Chlamydomonas",
+                            "Ostreococcus",
+                            "Micromonas",
+                            "Chlorella",
+                            "Physcomitrella"],
+                   "food": ["Bacteria",
+                            "Bacillus",
+                            "Escherichia",
+                            "Salmonella",
+                            "Chlamydophila",
+                            "Chlorobium",
+                            "Deinococcus",
+                            "Caulobacter"],
+                   "unknown":["Saccharomyces",
+                            "Neurospora",
+                            "Homo",
+                            "Mus",
+                            "Dictyostelium",
+                            "Toxoplasma",
+                            "Guillardia",
+                            "Bigelowiella",
+                            "Emiliania",
+                            "Aureococcus",
+                            "Ectocarpus",
+                            "Schizosaccharomyces",
+                            "Amycolatopsis",
+                            "Aquifex",
+                            "Sulfolobus",
+                            "Nanoarchaeum",
+                            "Haloferax",
+                            "Methanococcus",
+                            "Cenarchaeum"]},
+                "test_dir": os.path.join(training_dir, "host")}
+
+        label_def = settings['class_defs']
+        test_dir = settings['test_dir']
+
+        a = dg.core.BuildTest(label_def, test_dir)
+
+        X = a.build_test()
+
+        self.assertEqual(X.shape, (16,4))
 
 
 if __name__ == '__main__':

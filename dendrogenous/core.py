@@ -371,7 +371,7 @@ class BuildTraining():
         """
         Numerically encode class labels
         """
-        label_encoding = {name: index for index, name in enumerate(named_label_definitions)}
+        label_encoding = {name: index for index, name in enumerate(sorted(named_label_definitions))}
         return label_encoding
 
 
@@ -395,6 +395,57 @@ class BuildTraining():
             y = y + y_part
 
         return np.vstack(X), np.vstack(y), encoded_labels
+
+class BuildTest():
+    """
+    Build full test X
+    """
+
+    def __init__(self, named_label_definitions, test_dir):
+        """
+        Class to build full training set,
+        named_label_definitions - full name definitions of characters
+        related to each class i.e. "{'endosymbiont' : ['chlorella', 'archaeplastida...'
+
+        test_dir: folder for unlabelled test data {'endosymbiont': 'endosymbiont/trees}
+        """
+
+        self.taxaparse = ete3.ncbi_taxonomy.NCBITaxa()
+        self.named_label_definitions = named_label_definitions
+        self.test_dir = test_dir
+
+    def translate_categories(self, categories):
+        """
+        translate category names to taxid
+        """
+        for key, value in categories.items():
+            taxids = self.taxaparse.get_name_translator(categories[key]).values()
+            categories[key] =  \
+                    set([x[0] for x in taxids])
+        return categories
+
+    def encode_labels(self, named_label_definitions):
+        """
+        Numerically encode class labels
+        """
+        label_encoding = {name: index for index, name in enumerate(sorted(named_label_definitions))}
+        return label_encoding
+
+
+    def build_test(self):
+        """
+        Build test X
+        """
+
+        encoded_labels = self.encode_labels(self.named_label_definitions)
+
+        taxid_label_definitions = self.translate_categories(self.named_label_definitions)
+
+        parser = LabelParser('test', self.test_dir)
+        X_test = parser.build_X_test(taxid_label_definitions,
+                                                 encoded_labels)
+
+        return X_test
 
 
 class LabelParser():
@@ -421,12 +472,14 @@ class LabelParser():
             class_vector.append(parser.get_tree_vector(label_definitions, label_encoding))
         return class_vector
 
-
     def build_subX_y(self, label_definitions, label_encoding):
-
         vectors = self.parse_folder(label_definitions, label_encoding)
         y = [label_encoding[self.label] for x in range(len(vectors))]
         return vectors, y
+
+    def build_X_test(self, label_definitions, label_encoding):
+        vectors = self.parse_folder(label_definitions, label_encoding)
+        return np.vstack(vectors)
 
 
 class TreeParser():
