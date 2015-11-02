@@ -1,6 +1,6 @@
+numpy==1.9.2
+argparse==1.2.1
+mock
 biopython==1.64
 pytest==2.6.4
 PyMySQL==0.6.3
-argparse==1.2.1
-numpy==1.9.2
-mock

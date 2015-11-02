@@ -17,7 +17,7 @@ def main(settings_file):
 
     seqs_needing_run = dg.utils.check_already_run(settings, input_seqs)
 
-    r = joblib.Parallel(n_jobs=24, verbose=5)(joblib.delayed(pool_process)\
+    r = joblib.Parallel(n_jobs=4, verbose=5)(joblib.delayed(pool_process)\
             (seq, settings) for seq in seqs_needing_run)
 
 def pool_process(seq, settings):
